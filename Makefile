@@ -28,16 +28,17 @@ build: clean
 
 	@echo "Packaging application"
 	@cd ./dist/libs && zip -r ../../dist/libs.zip .
-	@cp ./pyspark_etl/main.py ./dist
-	@cd ./pyspark_etl && zip -x main.py -r ../dist/pkg.zip .
+	@cp ./src/main.py ./dist
+	@cp ./spark.conf ./dist
+	@cd ./src && zip -x main.py -r ../dist/pkg.zip .
 	@cd ./dist; rm -rf libs
 
 submit:
-	@if [ ! -f ./dist/pkg.zip ] && [ ! -f ./dist/libs.zip ]; then \
+	@if [ ! -f ./dist/pkg.zip ] || [ ! -f ./dist/libs.zip ]; then \
 		echo "Please run \"make build\" first to package the application"; exit 1;\
 	else \
  		cd dist; spark-submit \
-					--properties-file ../config/spark.conf \
+					--properties-file spark.conf \
 					--py-files libs.zip,pkg.zip main.py \
 					\
 					--pipelines $(PIPELINES); \
