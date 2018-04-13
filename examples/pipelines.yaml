@@ -1,0 +1,41 @@
+pipelines:
+  example_pipeline:
+    extractors:
+      - data_frame_name: example_df
+        class: pipeline.extract.native.DataFrameReader
+        args:
+          - first
+          - second
+        kwargs:
+          first: first
+          second: second
+      - data_frame_name: example_df
+        class: pipeline.extract.native.DataFrameReader
+        args:
+          - first
+          - second
+        kwargs:
+          first: first
+          second: second
+    transformers:
+      - class: pipeline.transform.clean.MissingValueWhatever
+        args:
+          - whatever
+        kwargs:
+          whatever: whatever
+      - class: pipeline.transform.clean.MissingValueWhatever
+        args:
+          - whatever
+        kwargs:
+          whatever: whatever
+    loaders:
+      - class: pipeline.load.what.Ever
+          args:
+            - whatever
+          kwargs:
+            whatever: whatever
+      - class: pipeline.load.what.Ever
+        args:
+          - whatever
+        kwargs:
+          whatever: whatever
