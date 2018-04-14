@@ -28,10 +28,10 @@ build: clean
 
 	@echo "Packaging application"
 	@cd ./dist/libs && zip -r ../../dist/libs.zip .
-	@cp ./src/main.py ./dist
+	@cp ./pyspark_etl/main.py ./dist
 	@cp ./spark.conf ./dist
-	@cd ./src && zip -x main.py -r ../dist/pkg.zip .
-	@cd ./dist; rm -rf libs
+	@cd ./pyspark_etl && zip -x main.py -r ../dist/pkg.zip .
+	@cd ./dist && rm -rf libs
 
 submit:
 	@if [ ! -f ./dist/pkg.zip ] || [ ! -f ./dist/libs.zip ]; then \
