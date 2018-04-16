@@ -1,5 +1,7 @@
 from schema import SchemaError
 
+class PipelineError(Exception):
+    pass
 
 class PipelineSchemaError(SchemaError):
     def __init__(self, *args, **kwargs):

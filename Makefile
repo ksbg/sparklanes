@@ -1,11 +1,11 @@
 # Parse arguments
 ifeq (submit,$(firstword $(MAKECMDGOALS)))
-  PIPELINES := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  $(eval $(PIPELINES):;@:)
+  PIPELINE := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(PIPELINE):;@:)
 else
   ifeq (build submit,$(wordlist 1, 2, $(MAKECMDGOALS)))
-    PIPELINES := $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-    $(eval $(PIPELINES):;@:)
+    PIPELINE := $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(PIPELINE):;@:)
   endif
 endif
 
@@ -29,7 +29,7 @@ build: clean
 	@echo "Packaging application"
 	@cd ./dist/libs && zip -r ../../dist/libs.zip .
 	@cp ./pyspark_etl/main.py ./dist
-	@cp ./spark.conf ./dist
+	@cp -R ./spark-config ./dist
 	@cd ./pyspark_etl && zip -x main.py -r ../dist/pkg.zip .
 	@cd ./dist && rm -rf libs
 
@@ -38,8 +38,10 @@ submit:
 		echo "Please run \"make build\" first to package the application"; exit 1;\
 	else \
  		cd dist; spark-submit \
-					--properties-file spark.conf \
+					--properties-file ./spark-config/spark.conf \
+					--conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=./spark-config/log4j-spark.properties"  \
+					--conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=./spark-config/log4j-spark.properties" \
 					--py-files libs.zip,pkg.zip main.py \
 					\
-					--pipelines $(PIPELINES); \
+					--pipeline $(realpath $(lastword $(PIPELINE))); \
 	fi

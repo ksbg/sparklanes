@@ -1,5 +1,6 @@
 processes:
   extract:
+    data_frame_name: some_dataframe
     class: processes.extract.test.TestExtractor
     kwargs:
       arg1: first
@@ -21,8 +22,13 @@ processes:
         arg2: 1111
         arg3: 2222
 shared:
-  shared_resource_name: test_res_1
-  class: shared.test.SharedResource
-  kwargs:
-    arg1: first
-    arg2: second
+  - shared_resource_name: test_res_1
+    class: shared.test.SharedResource
+    kwargs:
+      arg1: a
+      arg2: b
+  - shared_resource_name: test_res_2
+    class: shared.test.AnotherSharedResource
+    kwargs:
+      arg1: c
+      opt_arg2: d
