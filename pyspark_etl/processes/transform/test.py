@@ -1,4 +1,6 @@
 from core.base import PipelineProcessBase
+from core.shared import Shared
+
 
 class TestTransformer(PipelineProcessBase):
     def __init__(self, arg1, arg2):

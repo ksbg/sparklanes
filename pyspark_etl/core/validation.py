@@ -53,11 +53,11 @@ def validate_class_args(cls, passed_args):
 
     # Check if minimum amount arguments is present
     if len(passed_args) < min_arg_no:
-        raise errors.PipelineInvalidClassArgumentsError('Not enough arguments supplied! Class `%s` expects at least the '
-                                                       'following arguments: `%s`'
+        raise errors.PipelineInvalidClassArgumentsError('Not enough arguments supplied! Class `%s` expects at least the'
+                                                        ' following arguments: `%s`'
                                                         % (cls.__name__,
-                                                          '` `'.join([args[i] for i in range(min_arg_no)])))
-    else: # Check if all required arguments are present
+                                                           '` `'.join([args[i] for i in range(min_arg_no)])))
+    else:  # Check if all required arguments are present
         for required_arg in args[:min_arg_no]:
             if required_arg not in passed_args.keys():
                 raise errors.PipelineInvalidClassArgumentsError(
@@ -69,6 +69,5 @@ def validate_class_args(cls, passed_args):
         if passed_arg not in args:
             raise errors.PipelineInvalidClassArgumentsError('Argument `%s` is not an argument of `%s.__init__`'
                                                             % (passed_args, cls.__name__))
-
 
     return passed_args

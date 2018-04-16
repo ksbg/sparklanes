@@ -24,13 +24,13 @@ class Shared(object):
         Shared.__delete(name, 'data_frame')
 
     @staticmethod
-    def __delete(name, type):
+    def __delete(name, res_type):
         try:
-            if type == 'resource':
+            if res_type == 'resource':
                 Shared.resources.pop(name)
-            elif type == 'data_frame':
+            elif res_type == 'data_frame':
                 Shared.data_frames.pop(name)
             else:
                 raise KeyError
         except KeyError:
-            raise errors.PipelineSharedResourceError('Resource `%s` with name `%s` not found' % (type, name))
+            raise errors.PipelineSharedResourceError('Resource `%s` with name `%s` not found' % (res_type, name))

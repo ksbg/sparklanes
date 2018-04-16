@@ -16,26 +16,27 @@ class PipelineDefinition(object):
     def __str__(self):
         table = list()
         table.append(['Pipeline consists of the following tasks (to be performed in descending order):'])
-        proc_table = [[step, proc['class'], proc['kwargs'] if 'kwargs' in proc.keys() else None] for step, procs in self.processes.items()
-                      for proc in procs]
+        proc_table = [[step, proc['class'], proc['kwargs'] if 'kwargs' in proc.keys() else None]
+                      for step, procs in self.processes.items() for proc in procs]
         table.append([tabulate(proc_table, headers=['Step', 'Class', 'Args'], tablefmt="rst")])
 
         if self.shared:
             table.append(['|'])
             table.append(['Shared resources consist of:'])
-            shared_res_table = [[s['resource_name'], s['class'], s['kwargs'] if 'kwargs' in s.keys() else None] for s in self.shared]
+            shared_res_table = [[s['resource_name'], s['class'], s['kwargs'] if 'kwargs' in s.keys() else None]
+                                for s in self.shared]
             table.append([tabulate(shared_res_table, headers=['Name', 'Class', 'Args'], tablefmt="rst")])
 
         return tabulate(table)
 
     def add_extractor(self, cls, kwargs=None):
-        self.__add_resource(cls=cls, res_type='extract', kwargs=kwargs)
+        self.__add_resource(definition={'class': cls, 'kwargs': kwargs}, def_type='extract')
 
-    def add_transformer(self, cls, kwargs):
-        self.__add_resource(cls=cls, res_type='transform', kwargs=kwargs)
+    def add_transformer(self, cls, kwargs=None):
+        self.__add_resource(definition={'class': cls, 'kwargs': kwargs}, def_type='extract')
 
-    def add_loader(self, cls, kwargs):
-        self.__add_resource(cls=cls, res_type='load', kwargs=kwargs)
+    def add_loader(self, cls, kwargs=None):
+        self.__add_resource(definition={'class': cls, 'kwargs': kwargs}, def_type='extract')
 
     def build_from_dict(self, pipeline_dict):
         pipeline_dict = validation.validate_pipeline_dict_schema(pipeline_dict)
@@ -100,6 +101,3 @@ class Pipeline(object):
                                                       str(e)))
 
                     proc.run()
-
-        print(Shared.data_frames)
-        print(Shared.resources)
