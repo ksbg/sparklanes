@@ -1,7 +1,9 @@
 from schema import SchemaError
 
+
 class PipelineError(Exception):
     pass
+
 
 class PipelineSchemaError(SchemaError):
     def __init__(self, *args, **kwargs):
@@ -26,4 +28,8 @@ class PipelineInvalidClassError(Exception):
 
 
 class PipelineInvalidClassArgumentsError(Exception):
+    pass
+
+
+class PipelineSharedResourceError(Exception):
     pass

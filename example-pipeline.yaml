@@ -1,6 +1,11 @@
 processes:
   extract:
-    data_frame_name: some_dataframe
+  - data_frame_name: some_dataframe
+    class: processes.extract.test.TestExtractor
+    kwargs:
+      arg1: first
+      arg2: second
+  - data_frame_name: another_data_frame
     class: processes.extract.test.TestExtractor
     kwargs:
       arg1: first
@@ -13,21 +18,18 @@ processes:
   load:
     - class: processes.load.test.TestLoader
       kwargs:
-        arg1: first
-        arg2: 1111
-        arg3: 2222
+        opt_arg1: first
+        opt_arg2: 1111
     - class: processes.load.test.TestLoader
       kwargs:
-        arg1: first
-        arg2: 1111
-        arg3: 2222
+        opt_arg1: first
 shared:
-  - shared_resource_name: test_res_1
+  - resource_name: test_res_1
     class: shared.test.SharedResource
     kwargs:
       arg1: a
       arg2: b
-  - shared_resource_name: test_res_2
+  - resource_name: test_res_2
     class: shared.test.AnotherSharedResource
     kwargs:
       arg1: c

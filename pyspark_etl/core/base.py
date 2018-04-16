@@ -15,11 +15,3 @@ class PipelineProcessBase(object):
     @abstractmethod
     def run(self):
         pass
-
-
-class SharedBase(object):
-    @classmethod
-    def __add_to_self(cls, name, res):
-        if not isinstance(name, str):
-            raise TypeError('`name` must be of type `string`')
-        setattr(cls, name, res)

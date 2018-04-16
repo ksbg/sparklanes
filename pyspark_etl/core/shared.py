@@ -1,13 +1,36 @@
-from core.base import SharedBase
+from collections import OrderedDict
+
+from core import errors
 
 
-class Shared(SharedBase):
+class Shared(object):
+    data_frames = OrderedDict()
+    resources = OrderedDict()
+
     @staticmethod
     def add_resource(name, res):
-        getattr(Shared, '_%s__add_to_self' % SharedBase.__name__)(name, res)
+        Shared.resources[name] = res
 
-
-class DataFrames(SharedBase):
     @staticmethod
     def add_data_frame(name, df):
-        getattr(DataFrames, '_%s__add_to_self' % SharedBase.__name__)(name, df)
+        Shared.data_frames[name] = df
+
+    @staticmethod
+    def delete_resource(name):
+        Shared.__delete(name, 'resource')
+
+    @staticmethod
+    def delete_data_frame(name):
+        Shared.__delete(name, 'data_frame')
+
+    @staticmethod
+    def __delete(name, type):
+        try:
+            if type == 'resource':
+                Shared.resources.pop(name)
+            elif type == 'data_frame':
+                Shared.data_frames.pop(name)
+            else:
+                raise KeyError
+        except KeyError:
+            raise errors.PipelineSharedResourceError('Resource `%s` with name `%s` not found' % (type, name))

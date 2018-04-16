@@ -7,10 +7,10 @@ from core import errors
 from core.base import PipelineProcessBase
 
 
-def validate_pipeline_dict(pipeline_dict):
-    extract_format = {'data_frame_name': str, 'class': str, Optional('kwargs'): {str: object}}
-    transform_load_format = {'class': str, Optional('kwargs'): {str: object}}
-    shared_format = {'shared_resource_name': str, 'class': str, Optional('kwargs'): {str: object}}
+def validate_pipeline_dict_schema(pipeline_dict):
+    extract_format = {'data_frame_name': str, 'class': str, Optional('kwargs'): Or({str: object}, None)}
+    transform_load_format = {'class': str, Optional('kwargs'): Or({str: object}, None)}
+    shared_format = {'resource_name': str, 'class': str, Optional('kwargs'): Or({str: object}, None)}
 
     schema = Schema({'processes': {'extract': Or([extract_format], extract_format),
                                    Optional('transform'): Or([transform_load_format], transform_load_format),
@@ -34,7 +34,7 @@ def validate_and_get_class(cls_path, shared=False):
 
     if not shared:
         if not issubclass(cls, PipelineProcessBase):
-            raise errors.PipelineInvalidClassError('Class `%s` is not a valid class (not a child of etl.PipelineProcessBase)'
+            raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessBase)'
                                                    % cls.__name__)
 
     return cls

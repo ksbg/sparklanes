@@ -3,10 +3,10 @@ from core.shared import Shared
 
 
 class TestLoader(PipelineProcessBase):
-    def __init__(self, arg1, arg2, arg3, opt_arg_2=1):
+    def __init__(self, opt_arg1=1, opt_arg2=2):
         super(TestLoader, self).__init__()
 
     def run(self):
         print('TestLoader running')
-        Shared.test += 100
-        print(Shared.test)
+        Shared.resources['test'] += 100
+        print(Shared.resources['test'])
