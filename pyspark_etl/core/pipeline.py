@@ -47,7 +47,6 @@ class PipelineDefinition(object):
                 prs = pipeline_dict['processes'][step] if step != 'shared' else pipeline_dict[step]
                 prs = [prs] if isinstance(prs, dict) else prs
                 for p in prs:
-                    print(p['class'])
                     cls = validation.validate_and_get_class(p['class'], shared=(True if step == 'shared' else False))
                     definition = {'class': cls}
                     if 'kwargs' in p.keys() and p['kwargs']:

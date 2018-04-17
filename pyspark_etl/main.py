@@ -1,11 +1,29 @@
-# from pyspark import SparkContext
-# from pyspark.sql import SparkSession
+from argparse import ArgumentParser
 
 from core.pipeline import PipelineDefinition, Pipeline
 
-with open('/home/kevin/PycharmProjects/pyspark-etl/example-pipeline.yaml') as pipeline_yaml_stream:
-    pld = PipelineDefinition()
-    pld.build_from_yaml(yaml_file_stream=pipeline_yaml_stream)
-    print(pld)
-    pipeline = Pipeline(definition=pld)
-    pipeline.run()
+
+def main():
+    args = parse_args()
+
+    with open(args['pipeline']) as pipeline_yaml_stream:
+        pld = PipelineDefinition()
+        pld.build_from_yaml(yaml_file_stream=pipeline_yaml_stream)
+        print(pld)
+        pipeline = Pipeline(definition=pld)
+        pipeline.run()
+
+
+def parse_args():
+    parser = ArgumentParser()
+
+    parser.add_argument('-p', '--pipeline',
+                        help='Relative or absolute path to the pipeline definition YAML file',
+                        type=str,
+                        required=True)
+
+    return parser.parse_args().__dict__
+
+
+if __name__ == '__main__':
+    main()

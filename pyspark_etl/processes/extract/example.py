@@ -8,6 +8,6 @@ class TestExtractor(PipelineProcessBase):
 
     def run(self):
         print('TestExtractor running')
-        Shared.add_resource('test', 100)
-        print(Shared.resources['test'])
+        Shared.add_resource('tests', 100)
+        print(Shared.resources['tests'])
 
