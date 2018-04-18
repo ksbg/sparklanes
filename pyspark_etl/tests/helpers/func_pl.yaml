@@ -1,0 +1,16 @@
+processes:
+  extract:
+    data_frame_name: ints_df
+    class: tests.helpers.processes.ProcessExtractIntsFromCSV
+  transform:
+    - class: tests.helpers.processes.ProcessTransformConvertDataFrameToList
+      kwargs:
+        output_shared_list_name: ints_df_as_list
+    - class: tests.helpers.processes.ProcessTransformMultiplyIntsInSharedListByTwo
+      kwargs:
+        list_name: ints_df_as_list
+  load:
+    class: tests.helpers.processes.ProcessLoadDumpResultListToCSV
+    kwargs:
+      list_name: ints_df_as_list
+      output_file_name: func_pl_data_out.csv

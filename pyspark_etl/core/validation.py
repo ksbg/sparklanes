@@ -32,15 +32,21 @@ def validate_and_get_class(cls_path, shared=False):
         raise errors.PipelineClassNotFoundError('Could not find class %s in module %s'
                                                 % (cls_path[sep + 1:], cls_path[:sep]))
 
-    if not shared:
-        if not issubclass(cls, PipelineProcessBase):
-            raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessBase)'
-                                                   % cls.__name__)
+    return validate_processor_parent(cls) if not shared else cls
+
+
+def validate_processor_parent(cls):
+    if not issubclass(cls, PipelineProcessBase):
+        raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessBase)'
+                                               % cls.__name__)
 
     return cls
 
 
 def validate_class_args(cls, passed_args):
+    if passed_args is None:
+        passed_args = {}
+
     # Inspect class arguments
     super_cls_args = inspect.getargspec(PipelineProcessBase.__init__)[0]
     arg_spec = inspect.getargspec(cls.__init__)

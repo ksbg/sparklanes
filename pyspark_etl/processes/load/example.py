@@ -8,5 +8,5 @@ class TestLoader(PipelineProcessBase):
 
     def run(self):
         print('TestLoader running')
-        Shared.resources['tests'] += 100
-        print(Shared.resources['tests'])
+        Shared.__resources['tests'] += 100
+        print(Shared.__resources['tests'])

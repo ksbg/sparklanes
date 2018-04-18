@@ -49,7 +49,7 @@ class ValidPipelineYAMLDefinitions(object):
                                                 test_cls_mdl + 'ProcessWithThreeOptionalArgs',
                                                 test_cls_mdl + 'ProcessWithOnePositionalAndTwoOptionalArgs']}
         self.combinations = self.generate_combinations()
-        self.__iter_index, self.__iter_len = 0, len(self.combinations)
+        self.__iter_index, self.iter_len = 0, len(self.combinations)
         self.__old_file_path = ''
 
     def __iter__(self):
@@ -62,7 +62,7 @@ class ValidPipelineYAMLDefinitions(object):
             except OSError as e:
                 raise e
 
-        if not self.__iter_index < self.__iter_len:
+        if not self.__iter_index < self.iter_len:
             self.__iter_index = 0
             raise StopIteration
 
