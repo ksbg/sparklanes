@@ -2,6 +2,7 @@ processes:
   extract:
     data_frame_name: ints_df
     class: tests.helpers.processes.ProcessExtractIntsFromCSV
+
   transform:
     - class: tests.helpers.processes.ProcessTransformConvertDataFrameToList
       kwargs:
@@ -13,4 +14,4 @@ processes:
     class: tests.helpers.processes.ProcessLoadDumpResultListToCSV
     kwargs:
       list_name: ints_df_as_list
-      output_file_name: func_pl_data_out.csv
+      output_file_name: res/func_pl_data_out.csv

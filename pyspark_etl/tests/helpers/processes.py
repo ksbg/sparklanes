@@ -133,11 +133,12 @@ class ProcessAddColumnToDataFrameFromRandomColumn(PipelineProcessBase):
 
 
 class ProcessExtractIntsFromCSV(PipelineProcessBase):
-    def __init__(self, **kwargs):
+    def __init__(self, csv_path, **kwargs):
+        self.csv_path = csv_path
         super(ProcessExtractIntsFromCSV, self).__init__(**kwargs)
 
     def run(self):
-        df = self.spark.read.csv(path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'func_pl_data.csv'),
+        df = self.spark.read.csv(path=self.csv_path,
                                  header=True)
         Shared.add_data_frame(self.data_frame_name, df)
 

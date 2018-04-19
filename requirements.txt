@@ -1,3 +1,11 @@
+docopt==0.6.2
+py4j==0.10.6
+pykwalify==1.6.1
+pyspark==2.3.0
+python-dateutil==2.7.2
 PyYAML==3.12
+ruamel.ordereddict==0.4.13
+ruamel.yaml==0.15.37
 schema==0.6.7
+six==1.11.0
 tabulate==0.8.2

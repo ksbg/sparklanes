@@ -30,9 +30,10 @@ class PipelineDefinition(object):
 
         return '\n%s\n' % tabulate(table)
 
-    def add_extractor(self, cls, kwargs=None):
+    def add_extractor(self, cls, data_frame_name, kwargs=None):
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
-                            def_type='extract')
+                            def_type='extract',
+                            unique_kwarg=data_frame_name)
 
     def add_transformer(self, cls, kwargs=None):
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
@@ -41,6 +42,11 @@ class PipelineDefinition(object):
     def add_loader(self, cls, kwargs=None):
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
                             def_type='load')
+
+    def add_shared(self, cls, resource_name, kwargs=None):
+        self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
+                            def_type='shared',
+                            unique_kwarg=resource_name)
 
     def build_from_dict(self, pipeline_dict):
         pipeline_dict = validation.validate_pipeline_dict_schema(pipeline_dict)
@@ -57,8 +63,9 @@ class PipelineDefinition(object):
                     definition = {'class': cls,
                                   'kwargs': validation.validate_class_args(cls=cls, passed_args=p['kwargs'])}
                     if unique_kwarg:
-                        definition[unique_kwarg] = p[unique_kwarg]
-                    self.__add_resource(definition=definition, def_type=step)
+                        self.__add_resource(definition=definition, def_type=step, unique_kwarg=p[unique_kwarg])
+                    else:
+                        self.__add_resource(definition=definition, def_type=step)
 
     def build_from_yaml(self, yaml_file_stream):
         if not isinstance(yaml_file_stream, file):
@@ -70,12 +77,16 @@ class PipelineDefinition(object):
         return {'class': validation.validate_processor_parent(cls),
                 'kwargs': validation.validate_class_args(cls, kwargs)}
 
-    def __add_resource(self, definition, def_type):
+    def __add_resource(self, definition, def_type, unique_kwarg=None):
         if not isinstance(definition['class'], (type, ClassType)):
             raise TypeError('Supplied argument `cls` is not a class.')
         if def_type in ['extract', 'transform', 'load']:
+            if unique_kwarg:
+                definition['data_frame_name'] = unique_kwarg
             self.processes[def_type].append(definition)
         elif def_type == 'shared':
+            if unique_kwarg:
+                definition['resource_name'] = unique_kwarg
             self.shared.append(definition)
         else:
             raise ValueError('Argument `def_type` must be one of: `extract`, `transform` or `load`')
@@ -85,6 +96,10 @@ class Pipeline(object):
     def __init__(self, definition, sc=None):
         if not isinstance(definition, PipelineDefinition):
             raise TypeError('Supplied argument is not of type `PipelineDefinition`')
+        elif len(definition.processes['extract']) == 0:
+            raise errors.PipelineError('There must be at least one extract process in the pipeline definition')
+        elif len(definition.processes['load']) == 0:
+            raise errors.PipelineError('There must be at least one load process in the pipeline definition')
 
         self.processes = definition.processes
         self.sc = SparkContext.getOrCreate() if sc is None else sc

@@ -24,7 +24,7 @@ build: clean
 	@mkdir -p ./dist/libs
 
 	@echo "Installing requirements"
-	@pip install -r requirements.txt -t ./dist/libs
+	@pip install -r submit-requirements.txt -t ./dist/libs
 
 	@echo "Packaging application"
 	@cd ./dist/libs && zip -r ../../dist/libs.zip .
@@ -45,3 +45,6 @@ submit:
 					\
 					--pipeline $(realpath $(lastword $(PIPELINE))); \
 	fi
+
+test:
+	@cd pyspark_etl; python -m unittest discover -v

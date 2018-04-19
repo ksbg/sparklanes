@@ -50,8 +50,9 @@ Spark Configuration
 Running tests
 =============
 
-Simply run `python -m unittest discover -v` inside the module root (`./pyspark_etl`) to run the entire test suite.
+Simply run `make test` to run the entire test suite
 
 Dependencies
 ============
-Just make sure you have _pip_ installed, and the dependencies in _requirements.txt_ will be solved during packaging.
+Just make sure you have _pip_ installed, and the dependencies in _submit-requirements.txt_ will be solved during 
+packaging. Packages mentioned in _requirements.txt_ are required to run the tests.

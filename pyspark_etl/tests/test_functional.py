@@ -1,7 +1,10 @@
+import csv
 import os
 from unittest import TestCase
+from filecmp import cmp
 from core.pipeline import PipelineDefinition, Pipeline
-import csv
+import subprocess
+from tests.helpers import processes
 
 
 class TestFunctionalExtractTransformLoadCSV(TestCase):
@@ -12,39 +15,57 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
     Transform: Multiply all numbers in the list by two
     Load: Dump the results to a new csv file
     """
-    def test_pipeline(self):
-        yaml_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/func_pl.yaml')
-        input_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/func_pl_data.csv')
-        output_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/func_pl_data_out.csv')
 
-        # Read input CSV
-        with open(input_csv) as input_file:
-            reader = csv.DictReader(input_file)
-            input_data = []
-            for row in reader:
-                input_data.append(int(row['number']))
-        expected_result = [i * 2 for i in input_data]
+    def test_csv_example_pipeline_defined_manually(self):
+        cur_dir = os.path.dirname(os.path.realpath(__file__))
+        input_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data.csv')
+        output_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_out.csv')
+        expected_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_expected.csv')
 
         pd = PipelineDefinition()
-        with open(yaml_file) as pl_file:
-            pd.build_from_yaml(pl_file)
-
+        pd.add_extractor(cls=processes.ProcessExtractIntsFromCSV,
+                         data_frame_name='ints_df',
+                         kwargs={'csv_path': input_csv})
+        pd.add_transformer(processes.ProcessTransformConvertDataFrameToList,
+                           kwargs={'output_shared_list_name':'ints_df_as_list'})
+        pd.add_transformer(processes.ProcessTransformMultiplyIntsInSharedListByTwo,
+                           kwargs={'list_name': 'ints_df_as_list'})
+        pd.add_loader(processes.ProcessLoadDumpResultListToCSV,
+                      kwargs={'list_name': 'ints_df_as_list', 'output_file_name': 'res/func_pl_data_out.csv'})
         pipeline = Pipeline(definition=pd)
-
         pipeline.run()
 
-        # Read output csv
-        with open(output_csv) as output_file:
-            reader = csv.DictReader(output_file)
-            output_data = []
-            for row in reader:
-                output_data.append(int(row['number']))
-
         # Test
-        self.assertEqual(output_data, expected_result)
+        self.assertEqual(cmp(output_csv, expected_csv), True)
 
         # Clean up
         try:
             os.remove(output_csv)
         except OSError:
             pass
+
+    def test_iris_example_pipeline_defined_from_yaml(self):
+        yaml_file = 'examples/iris.yaml'  # Relative from project root
+        out_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../dist/out/')
+        expected_out_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/res/iris_expected.json')
+
+        with open(os.devnull, 'wb') as devnull:
+            subprocess.check_call(['make', 'build', 'submit', yaml_file],
+                                  stdout=devnull,
+                                  stderr=subprocess.STDOUT,
+                                  cwd=os.path.abspath('..'))
+
+        out_files = os.listdir(out_path)
+        out_file = None
+        for o_f in out_files:
+            if o_f[-4:] == 'json':
+                out_file = o_f
+                break
+
+        # Check if file has been found
+        if out_file is None:
+            self.fail('Iris output JSON file was not found.')
+
+        # Check if file looks as expected
+        self.assertEqual(cmp(os.path.join(out_path, out_file), expected_out_file), True)
+
