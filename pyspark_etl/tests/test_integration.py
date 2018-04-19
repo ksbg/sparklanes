@@ -91,7 +91,7 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
 
         # Run process that checks for non-existing resource
         proc = processes.ProcessCheckIfSharedObjectExists(name=res_name, res_type='shared')
-        self.assertRaises(errors.PipelineSharedResourceError, proc.run)
+        self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
         # Add a list of integers to shared resources
         res = [100, 200, 300, 400, 500]
@@ -120,14 +120,14 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
 
         # Run process that checks for non-existing resource (should throw exception again)
         proc = processes.ProcessCheckIfSharedObjectExists(name=res_name, res_type='shared')
-        self.assertRaises(errors.PipelineSharedResourceError, proc.run)
+        self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
     def test_integration_passing_of_shared_data_frames(self):
         df_name = 'abc'
 
         # Run process that checks for non-existing resource
         proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
-        self.assertRaises(errors.PipelineSharedResourceError, proc.run)
+        self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
         # Generate data frame with 10 rows (an index and a column with random numbers, rand_a and rand_b)
         df = self.ss.range(10)
@@ -171,4 +171,4 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
 
         # Run process that checks for non-existing resource (should throw exception again)
         proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
-        self.assertRaises(errors.PipelineSharedResourceError, proc.run)
+        self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)

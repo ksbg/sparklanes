@@ -33,3 +33,15 @@ class PipelineInvalidClassArgumentsError(Exception):
 
 class PipelineSharedResourceError(Exception):
     pass
+
+
+class PipelineInvalidResourceNameError(Exception):
+    pass
+
+
+class PipelineSharedResourceNotFound(Exception):
+    pass
+
+
+class PipelineSharedResourceTypeInvalid(Exception):
+    pass
