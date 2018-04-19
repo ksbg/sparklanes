@@ -1,9 +1,10 @@
-import csv
 import os
-from unittest import TestCase
-from filecmp import cmp
-from core.pipeline import PipelineDefinition, Pipeline
 import subprocess
+import tempfile
+from filecmp import cmp
+from unittest import TestCase
+
+from core.pipeline import PipelineDefinition, Pipeline
 from tests.helpers import processes
 
 
@@ -19,6 +20,7 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
     def test_csv_example_pipeline_defined_manually(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
         input_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data.csv')
+        _, output_csv = tempfile.mkstemp()
         output_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_out.csv')
         expected_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_expected.csv')
 
@@ -27,7 +29,7 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
                          data_frame_name='ints_df',
                          kwargs={'csv_path': input_csv})
         pd.add_transformer(processes.ProcessTransformConvertDataFrameToList,
-                           kwargs={'output_shared_list_name':'ints_df_as_list'})
+                           kwargs={'output_shared_list_name': 'ints_df_as_list'})
         pd.add_transformer(processes.ProcessTransformMultiplyIntsInSharedListByTwo,
                            kwargs={'list_name': 'ints_df_as_list'})
         pd.add_loader(processes.ProcessLoadDumpResultListToCSV,
@@ -68,4 +70,3 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
 
         # Check if file looks as expected
         self.assertEqual(cmp(os.path.join(out_path, out_file), expected_out_file), True)
-

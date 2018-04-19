@@ -1,10 +1,11 @@
-import yaml
-from collections import OrderedDict
 import itertools
 import os
 import tempfile
+from collections import OrderedDict
 from random import choice
 from uuid import uuid4
+
+import yaml
 
 
 class ValidPipelineYAMLDefinitions(object):

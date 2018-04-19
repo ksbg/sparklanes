@@ -73,4 +73,3 @@ class TestPipelineDefinition(TestCase):
         for packed_args in args:
             packed_args = packed_args if not unique_kwarg else (packed_args[0], 'a_name', packed_args[1])
             self.assertRaises(errors.PipelineInvalidClassArgumentsError, mtd, *packed_args)
-

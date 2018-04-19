@@ -5,6 +5,7 @@ from core.shared import Shared
 
 import csv
 
+
 class ProcessNotInherited(object):
     pass
 
@@ -116,7 +117,7 @@ class ProcessMultiplyIntsInSharedListByTwo(PipelineProcessBase):
 
     def run(self):
         l = Shared.get_resource(self.resource_name)
-        Shared.update_resource(self.resource_name, [i*2 for i in l])
+        Shared.update_resource(self.resource_name, [i * 2 for i in l])
 
 
 class ProcessAddColumnToDataFrameFromRandomColumn(PipelineProcessBase):
@@ -160,7 +161,7 @@ class ProcessTransformMultiplyIntsInSharedListByTwo(PipelineProcessBase):
 
     def run(self):
         l = Shared.get_resource(self.list_name)
-        Shared.update_resource(self.list_name, [int(i)*2 for i in l])
+        Shared.update_resource(self.list_name, [int(i) * 2 for i in l])
 
 
 class ProcessLoadDumpResultListToCSV(PipelineProcessBase):
@@ -176,5 +177,3 @@ class ProcessLoadDumpResultListToCSV(PipelineProcessBase):
             writer.writerow(['id', 'number'])
             for id, i in zip(range(10), l):
                 writer.writerow([id, i])
-
-

@@ -1,9 +1,9 @@
 from collections import OrderedDict
+from types import ClassType
 
 import yaml
 from pyspark import SparkContext
 from tabulate import tabulate
-from types import ClassType
 
 from core import validation, errors
 from core.shared import Shared
