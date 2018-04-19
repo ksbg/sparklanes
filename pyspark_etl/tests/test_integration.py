@@ -31,6 +31,7 @@ class TestFromYAMLToPipeline(TestCase):
         """
         valid_definitions = ValidPipelineYAMLDefinitions()
         for yaml_file_stream in valid_definitions:
+            Shared.delete_all()
             self.counter += 1
             try:
                 # Build definition

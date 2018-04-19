@@ -4,6 +4,7 @@ import itertools
 import os
 import tempfile
 from random import choice
+from uuid import uuid4
 
 
 class ValidPipelineYAMLDefinitions(object):
@@ -91,7 +92,7 @@ class ValidPipelineYAMLDefinitions(object):
             deff_cp = deff.copy()
             deff_cp['class'] = choice(self.__classes[key])  # Randomly select one of the valid classes
             if extra_field:
-                deff_cp[extra_field] = 'f'
+                deff_cp[extra_field] = str(uuid4())
             possible_defs.append(deff_cp)
 
         # Add multi-class definitions (all combinations of possible defs)
