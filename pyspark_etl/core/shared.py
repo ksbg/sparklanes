@@ -98,6 +98,12 @@ class Shared(object):
         Shared.__delete(name, 'rdd')
 
     @staticmethod
+    def delete_all():
+        Shared.__data_frames = OrderedDict()
+        Shared.__rdds = OrderedDict()
+        Shared.__resources = OrderedDict()
+
+    @staticmethod
     def __delete(name, res_type):
         try:
             if res_type == 'resource':

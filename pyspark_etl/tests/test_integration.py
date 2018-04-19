@@ -129,7 +129,7 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
         proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
         self.assertRaises(errors.PipelineSharedResourceError, proc.run)
 
-        # Generate data frame with 10 rows (an index and 2 columns with random numbers, rand_a and rand_b)
+        # Generate data frame with 10 rows (an index and a column with random numbers, rand_a and rand_b)
         df = self.ss.range(10)
         df = df.select("id", rand(seed=10).alias('random'))
 
@@ -162,7 +162,7 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
 
         # Check if results are as expected
         for col_name, expected_vals in zip(('random', 'random10', 'random100'),
-                                         [rand_as_list, [i*10 for i in rand_as_list], [i*100 for i in rand_as_list]]):
+                                           [rand_as_list, [i*10 for i in rand_as_list], [i*100 for i in rand_as_list]]):
             self.assertEqual([i[col_name] for i in df.collect()], expected_vals)
 
         # Delete data frame

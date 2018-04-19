@@ -10,13 +10,13 @@ class TestPipelineDefinition(TestCase):
         self.example_definition = PipelineDefinition()
 
     def test_build_from_yaml(self):
-        # Test argument type
+        # Test argument type (all valid types already checked during integration tests)
         invalid_arg_types = [1, '1', [1], {'1': 1}, TestCase, self]
         for arg in invalid_arg_types:
             self.assertRaises(TypeError, PipelineDefinition().build_from_yaml, arg)
 
     def test_build_from_dict(self):
-        # Invalid argument types
+        # Invalid argument types (all valid types already checked during integration tests)
         args = ([1, 2, 3],
                 '1',
                 True,
@@ -68,8 +68,3 @@ class TestPipelineDefinition(TestCase):
         for arg1, arg2 in args:
             self.assertRaises(errors.PipelineInvalidClassArgumentsError, mtd, arg1, arg2)
 
-
-class TestPipeline(TestCase):
-    def setUp(self):
-        # Init a few pipeline definitions
-        pass

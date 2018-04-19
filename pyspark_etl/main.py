@@ -10,6 +10,7 @@ def main():
         pld = PipelineDefinition()
         pld.build_from_yaml(yaml_file_stream=pipeline_yaml_stream)
         pipeline = Pipeline(definition=pld)
+        pipeline.logger.info(str(pld))
         pipeline.run()
 
 

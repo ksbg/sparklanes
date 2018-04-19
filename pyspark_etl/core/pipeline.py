@@ -1,9 +1,9 @@
 from collections import OrderedDict
-from types import ClassType
 
 import yaml
 from pyspark import SparkContext
 from tabulate import tabulate
+from types import ClassType
 
 from core import validation, errors
 from core.shared import Shared
@@ -28,7 +28,7 @@ class PipelineDefinition(object):
                                 for s in self.shared]
             table.append([tabulate(shared_res_table, headers=['Name', 'Class', 'Args'], tablefmt="rst")])
 
-        return tabulate(table)
+        return '\n%s\n' % tabulate(table)
 
     def add_extractor(self, cls, kwargs=None):
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
@@ -90,7 +90,6 @@ class Pipeline(object):
         self.sc = SparkContext.getOrCreate() if sc is None else sc
         self.logger = self.sc._jvm.org.apache.log4j.LogManager.getLogger(self.__class__.__name__)
         self.__init_resources(shared=definition.shared)
-        self.__str__ = definition.__str__
 
     def __init_resources(self, shared):
         for s in shared:
@@ -104,8 +103,8 @@ class Pipeline(object):
                     self.logger.info('Running `%s` process: `%s`'
                                      % (step, proc['class'].__module__ + '.' + proc['class'].__name__))
                     if step == 'extract':
-                         proc['kwargs']['data_frame_name'] = proc['data_frame_name'] if 'kwargs' in proc.keys() else \
-                                                             {'data_frame_name': proc['data_frame_name']}
+                        proc['kwargs']['data_frame_name'] = proc['data_frame_name'] if 'kwargs' in proc.keys() else \
+                            {'data_frame_name': proc['data_frame_name']}
                     try:
                         proc = proc['class'](**proc['kwargs']) if 'kwargs' in proc.keys() else proc['class']()
                     except Exception as e:
