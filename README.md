@@ -63,8 +63,8 @@ shared:                                           # (list[dict] | dict) (optiona
         kwarg_name: value                         # (*) (optional) Keyword argument and its value                       
 ```
 
-From that file, the pipeline will be created automatically. Each of the
-classes will instantiated using the supplied keyword arguments, after
+From that file, the pipeline can be created automatically. Each of the
+classes will be instantiated using the supplied keyword arguments, after
 which the processes will run in subsequent order. If shared classes are
 specified, they will also be instantiated and made accessible to each process.
 
