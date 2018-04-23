@@ -10,11 +10,13 @@ from core.shared import Shared
 
 
 class PipelineDefinition(object):
+    """Pipeline definition class, from which a new pipeline can be created"""
     def __init__(self):
         self.processes = OrderedDict([('extract', []), ('transform', []), ('load', [])])
         self.shared = []
 
     def __str__(self):
+        """Creates a printable overview of the pipeline's processes"""
         table = list()
         table.append(['Pipeline consists of the following tasks (to be performed in descending order):'])
         proc_table = [[step, proc['class'], proc['kwargs'] if 'kwargs' in proc.keys() else None]
@@ -31,24 +33,50 @@ class PipelineDefinition(object):
         return '\n%s\n' % tabulate(table)
 
     def add_extractor(self, cls, data_frame_name, kwargs=None):
+        """
+        Used to add an extractor class to the pipeline definition
+        :param cls: (str) The extractor class
+        :param data_frame_name: (str) The name of the data frame to be created inside the extract process
+        :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
+        """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
                             def_type='extract',
                             unique_kwarg=data_frame_name)
 
     def add_transformer(self, cls, kwargs=None):
+        """
+        Used to add a transformer class to the pipeline definition
+        :param cls: (str) The extractor class
+        :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
+        """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
                             def_type='transform')
 
     def add_loader(self, cls, kwargs=None):
+        """
+        Used to add a loader class to the pipeline definition
+        :param cls: (str) The extractor class
+        :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
+        """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
                             def_type='load')
 
     def add_shared(self, cls, resource_name, kwargs=None):
+        """
+        Used to add a shared class to the pipeline definition
+        :param cls: (str) The extractor class
+        :param resource_name: (str) The name of the shared resource name, with which other processes can access it
+        :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
+        """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
                             def_type='shared',
                             unique_kwarg=resource_name)
 
     def build_from_dict(self, pipeline_dict):
+        """
+        Builds a pipeline definition from a schematized dict (see the yaml schema in README.md for the schema)
+        :param pipeline_dict: (dict) The pipeline definition dict
+        """
         pipeline_dict = validation.validate_pipeline_dict_schema(pipeline_dict)
 
         for step, unique_kwarg in zip(['extract', 'transform', 'load', 'shared'],
@@ -68,6 +96,10 @@ class PipelineDefinition(object):
                         self.__add_resource(definition=definition, def_type=step)
 
     def build_from_yaml(self, yaml_file_stream):
+        """
+        Builds a pipeline from a schematized YAML file
+        :param yaml_file_stream: A readable file stream to the YAML file
+        """
         if not isinstance(yaml_file_stream, file):
             raise TypeError('Argument `yaml_file_stream` must be a readable file stream')
         pipeline_dict = yaml.load(yaml_file_stream)

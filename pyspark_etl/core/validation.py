@@ -8,6 +8,11 @@ from core.base import PipelineProcessBase
 
 
 def validate_pipeline_dict_schema(pipeline_dict):
+    """
+    Makes sure that the pipeline definition dict has the correct schema
+    :param pipeline_dict: The pipeline definition dict from which the pipeline definition will be created
+    :return: (dict) The validated dict
+    """
     extract_format = {'data_frame_name': str, 'class': str, Optional('kwargs'): Or({str: object}, None)}
     transform_load_format = {'class': str, Optional('kwargs'): Or({str: object}, None)}
     shared_format = {'resource_name': str, 'class': str, Optional('kwargs'): Or({str: object}, None)}
@@ -23,6 +28,14 @@ def validate_pipeline_dict_schema(pipeline_dict):
 
 
 def validate_and_get_class(cls_path, shared=False):
+    """
+    Checks whether the supplied class meets the requirements:
+    - Does the class under the specified path exist?
+    - Is the class a child of core.base.PipelineProcessBase? (not checked for shared classes)
+    :param cls_path: (str) full path to the class, relative from the module root
+    :param shared: (boolean) indicates whether the class to be checked is a shared object
+    :return: (class) The validated class
+    """
     sep = cls_path.rfind('.')
     try:
         cls = getattr(import_module(cls_path[:sep]), cls_path[sep + 1:])
@@ -36,6 +49,7 @@ def validate_and_get_class(cls_path, shared=False):
 
 
 def validate_processor_parent(cls):
+    """Checks whether the class is a child of core.base.PipelineProcessBase"""
     if not issubclass(cls, PipelineProcessBase):
         raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessBase)'
                                                % cls.__name__)
@@ -44,6 +58,14 @@ def validate_processor_parent(cls):
 
 
 def validate_class_args(cls, passed_args):
+    """
+    Validates if the keyword arguments are specified as required
+    - Checks if all required arguments are present
+    - Checks if any non-existing arguments are specified
+    :param cls: (class) The clas whose arguments should be checked
+    :param passed_args: (dict) The dictionary of keyword arguments
+    :return: (dict) The validated keyword arguments
+    """
     if passed_args is None:
         passed_args = {}
 

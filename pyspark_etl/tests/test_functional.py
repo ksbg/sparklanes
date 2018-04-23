@@ -9,15 +9,14 @@ from tests.helpers import processes
 
 
 class TestFunctionalExtractTransformLoadCSV(TestCase):
-    """
-    Checks the behavior of the entire pipeline. The following pipeline as defined in helpers/func_pl.yaml will be used:
-    Extract: Load a csv file from disk as a spark dataframe
-    Transform: Convert the data frame to a list
-    Transform: Multiply all numbers in the list by two
-    Load: Dump the results to a new csv file
-    """
-
     def test_csv_example_pipeline_defined_manually(self):
+        """
+        Checks the behavior of the entire pipeline. The following pipeline as defined in helpers/func_pl.yaml will be used:
+        Extract: Load a csv file from disk as a spark dataframe
+        Transform: Convert the data frame to a list
+        Transform: Multiply all numbers in the list by two
+        Load: Dump the results to a new csv file
+        """
         cur_dir = os.path.dirname(os.path.realpath(__file__))
         input_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data.csv')
         _, output_csv = tempfile.mkstemp()
@@ -47,6 +46,9 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
             pass
 
     def test_iris_example_pipeline_defined_from_yaml(self):
+        """
+        Runs the iris example pipeline and checks if the output is as expected
+        """
         yaml_file = 'examples/iris.yaml'  # Relative from project root
         out_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../dist/out/')
         expected_out_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/res/iris_expected.json')
