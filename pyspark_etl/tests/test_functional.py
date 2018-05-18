@@ -1,14 +1,21 @@
 import os
 import subprocess
 import tempfile
+import warnings
 from filecmp import cmp
 from unittest import TestCase
 
-from core.pipeline import PipelineDefinition, Pipeline
-from tests.helpers import processes
+from six import PY3
+
+from pyspark_etl.core.pipeline import PipelineDefinition, Pipeline
+from pyspark_etl.tests.helpers import processes
 
 
 class TestFunctionalExtractTransformLoadCSV(TestCase):
+    def setUp(self):
+        if PY3:
+            warnings.simplefilter('ignore', ResourceWarning)
+
     def test_csv_example_pipeline_defined_manually(self):
         """
         Checks the behavior of the entire pipeline. The following pipeline as defined in helpers/func_pl.yaml will be used:
@@ -49,15 +56,14 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
         """
         Runs the iris example pipeline and checks if the output is as expected
         """
-        yaml_file = 'examples/iris.yaml'  # Relative from project root
+        yaml_file = 'pyspark_etl/tests/helpers/res/iris.yaml'  # Relative from project root
         out_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../dist/out/')
         expected_out_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/res/iris_expected.json')
 
         with open(os.devnull, 'wb') as devnull:
             subprocess.check_call(['make', 'build', 'submit', yaml_file],
                                   stdout=devnull,
-                                  stderr=subprocess.STDOUT,
-                                  cwd=os.path.abspath('..'))
+                                  stderr=subprocess.STDOUT)
 
         out_files = os.listdir(out_path)
         out_file = None

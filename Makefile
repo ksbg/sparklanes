@@ -23,19 +23,22 @@ build: clean
 	@mkdir -p ./dist
 	@mkdir -p ./dist/libs
 
-	@echo "Installing requirements"
+	echo "Installing requirements"
 	@pip install -r submit-requirements.txt -t ./dist/libs
 
-	@echo "Packaging application"
-	@cd ./dist/libs && zip -r ../../dist/libs.zip .
+	echo "Packaging application"
+	@cd ./dist/libs && zip -r ./../../dist/libs.zip .
 	@cp ./pyspark_etl/main.py ./dist
 	@cp -R ./spark-config ./dist
-	@cd ./pyspark_etl && zip -x main.py -r ../dist/pkg.zip .
+	@zip -x ./pyspark_etl/main.py -r ./dist/pkg.zip ./pyspark_etl
 	@cd ./dist && rm -rf libs
 
 submit:
-	@if [ ! -f ./dist/pkg.zip ] || [ ! -f ./dist/libs.zip ]; then \
+	@PIPELINE_ARG="$(realpath $(lastword $(PIPELINE)))"; echo $${PIPELINE_ARG}; \
+	if [ ! -f ./dist/pkg.zip ] || [ ! -f ./dist/libs.zip ]; then \
 		echo "Please run \"make build\" first to package the application"; exit 1;\
+	elif [ -z $${PIPELINE_ARG} ]; then \
+		echo "Pipeline definition file not found!"; exit 1; \
 	else \
  		cd dist; spark-submit \
 					--properties-file ./spark-config/spark.conf \
@@ -43,8 +46,8 @@ submit:
 					--conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=./spark-config/log4j-spark.properties" \
 					--py-files libs.zip,pkg.zip main.py \
 					\
-					--pipeline $(realpath $(lastword $(PIPELINE))); \
+					--pipeline $${PIPELINE_ARG}; \
 	fi
 
 test:
-	@cd pyspark_etl; python -m unittest discover -v
+	@python -m unittest discover -v

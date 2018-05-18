@@ -1,12 +1,13 @@
 from argparse import ArgumentParser
+from io import open
 
-from core.pipeline import PipelineDefinition, Pipeline
+from pyspark_etl.core.pipeline import PipelineDefinition, Pipeline
 
 
 def main():
     args = parse_args()
 
-    with open(args['pipeline']) as pipeline_yaml_stream:
+    with open(args['pipeline'], 'rb') as pipeline_yaml_stream:
         pld = PipelineDefinition()
         pld.build_from_yaml(yaml_file_stream=pipeline_yaml_stream)
         pipeline = Pipeline(definition=pld)

@@ -1,16 +1,18 @@
 from collections import OrderedDict
-from types import ClassType
+from io import IOBase
 
 import yaml
 from pyspark import SparkContext
+from six import class_types
 from tabulate import tabulate
 
-from core import validation, errors
-from core.shared import Shared
+from pyspark_etl.core import validation, errors
+from pyspark_etl.core.shared import Shared
 
 
 class PipelineDefinition(object):
     """Pipeline definition class, from which a new pipeline can be created"""
+
     def __init__(self):
         self.processes = OrderedDict([('extract', []), ('transform', []), ('load', [])])
         self.shared = []
@@ -100,7 +102,7 @@ class PipelineDefinition(object):
         Builds a pipeline from a schematized YAML file
         :param yaml_file_stream: A readable file stream to the YAML file
         """
-        if not isinstance(yaml_file_stream, file):
+        if not isinstance(yaml_file_stream, IOBase):
             raise TypeError('Argument `yaml_file_stream` must be a readable file stream')
         pipeline_dict = yaml.load(yaml_file_stream)
         self.build_from_dict(pipeline_dict)
@@ -110,7 +112,7 @@ class PipelineDefinition(object):
                 'kwargs': validation.validate_class_args(cls, kwargs)}
 
     def __add_resource(self, definition, def_type, unique_kwarg=None):
-        if not isinstance(definition['class'], (type, ClassType)):
+        if not isinstance(definition['class'], class_types):
             raise TypeError('Supplied argument `cls` is not a class.')
         if def_type in ['extract', 'transform', 'load']:
             if unique_kwarg:

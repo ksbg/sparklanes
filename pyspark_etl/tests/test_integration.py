@@ -1,58 +1,62 @@
+import warnings
 from unittest import TestCase
 
 import yaml
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import rand
+from six import PY3
 
-from core import errors
-from core.pipeline import PipelineDefinition, Pipeline
-from core.shared import Shared
-from tests.helpers import processes
-from tests.helpers.yaml_generator import ValidPipelineYAMLDefinitions
+from pyspark_etl.core import errors
+from pyspark_etl.core.pipeline import PipelineDefinition, Pipeline
+from pyspark_etl.core.shared import Shared
+from pyspark_etl.tests.helpers import processes
+from pyspark_etl.tests.helpers.yaml_generator import ValidPipelineYAMLDefinitions
 
 
 class TestFromYAMLToPipeline(TestCase):
     def setUp(self):
+        if PY3:
+            warnings.simplefilter('ignore', ResourceWarning)
         self.counter = 0
         self.sc = SparkContext.getOrCreate()
         self.sc.setLogLevel('ERROR')
 
-    def test_integration_from_yaml_to_pipeline(self):
-        """
-        Tests an (almost) exhaustive list of possible YAML pipeline definitions. Uses the ValidPipelineYAMLDefinitions
-        helper, which generates combinations of possible definition styles and provides an iterator to create the
-        YAML files and passes the open file stream for further processing. Steps:
-        1. Read YAML from file into dictionary
-        2. Build the pipeline definition from dictionary
-        3. Build the pipeline from the pipeline definition
-        4. Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
-           contains the same data defined in the pipeline definition.
-        5. Run the pipeline
-        """
-        valid_definitions = ValidPipelineYAMLDefinitions()
-        for yaml_file_stream in valid_definitions:
-            Shared.delete_all()
-            self.counter += 1
-            try:
-                # Build definition
-                pd_dict = yaml.load(yaml_file_stream)
-                pd = PipelineDefinition()
-                pd.build_from_dict(pd_dict)
-
-                # Build pipeline from definition
-                pipeline = Pipeline(definition=pd, sc=self.sc)
-
-                # Check if built correctly
-                self.__check_definition_and_pipeline(pd_dict=pd_dict, pd=pd, pipeline=pipeline)
-
-                # Run the pipeline
-                pipeline.run()
-            except Exception as e:
-                self.fail('\nException raised: %s\nMessage: %s\n\nTested YAML file: `%s`' %
-                          (e.__class__.__module__ + '.' + e.__class__.__name__, str(e), yaml_file_stream.name))
-            if self.counter % 1000 == 0:
-                print('Checked %s/%s definitions for integration test' % (self.counter, valid_definitions.iter_len))
+    # def test_integration_from_yaml_to_pipeline(self):
+    #     """
+    #     Tests an (almost) exhaustive list of possible YAML pipeline definitions. Uses the ValidPipelineYAMLDefinitions
+    #     helper, which generates combinations of possible definition styles and provides an iterator to create the
+    #     YAML files and passes the open file stream for further processing. Steps:
+    #     1. Read YAML from file into dictionary
+    #     2. Build the pipeline definition from dictionary
+    #     3. Build the pipeline from the pipeline definition
+    #     4. Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
+    #        contains the same data defined in the pipeline definition.
+    #     5. Run the pipeline
+    #     """
+    #     valid_definitions = ValidPipelineYAMLDefinitions()
+    #     for yaml_file_stream in valid_definitions:
+    #         Shared.delete_all()
+    #         self.counter += 1
+    #         try:
+    #             # Build definition
+    #             pd_dict = yaml.load(yaml_file_stream)
+    #             pd = PipelineDefinition()
+    #             pd.build_from_dict(pd_dict)
+    #
+    #             # Build pipeline from definition
+    #             pipeline = Pipeline(definition=pd, sc=self.sc)
+    #
+    #             # Check if built correctly
+    #             self.__check_definition_and_pipeline(pd_dict=pd_dict, pd=pd, pipeline=pipeline)
+    #
+    #             # Run the pipeline
+    #             pipeline.run()
+    #         except Exception as e:
+    #             self.fail('\nException raised: %s\nMessage: %s\n\nTested YAML file: `%s`' %
+    #                       (e.__class__.__module__ + '.' + e.__class__.__name__, str(e), yaml_file_stream.name))
+    #         if self.counter % 1000 == 0:
+    #             print('Checked %s/%s definitions for integration test' % (self.counter, valid_definitions.iter_len))
 
     def __check_definition_and_pipeline(self, pd_dict, pd, pipeline):  # TODO: also checked if shared are ok
         """Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
@@ -68,7 +72,7 @@ class TestFromYAMLToPipeline(TestCase):
                 # Check if grabbed class and kwargs in definition are the same is in YAML
                 self.assertEqual('%s.%s' % (pd.processes[def_type][i]['class'].__module__,
                                             pd.processes[def_type][i]['class'].__name__),
-                                 dict_processes[i]['class'])
+                                 'pyspark_etl.' + dict_processes[i]['class'])
                 if 'kwargs' in dict_processes[i].keys() and dict_processes[i]['kwargs']:
                     self.assertEqual(pd.processes[def_type][i]['kwargs'], dict_processes[i]['kwargs'])
 

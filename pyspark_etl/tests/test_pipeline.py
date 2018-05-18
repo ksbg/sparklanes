@@ -1,12 +1,17 @@
+import warnings
 from unittest import TestCase
 
-from core import errors
-from core.pipeline import PipelineDefinition
-from tests.helpers import processes
+from six import PY3
+
+from pyspark_etl.core import errors
+from pyspark_etl.core.pipeline import PipelineDefinition
+from pyspark_etl.tests.helpers import processes
 
 
 class TestPipelineDefinition(TestCase):
     def setUp(self):
+        if PY3:
+            warnings.simplefilter('ignore', ResourceWarning)
         self.example_definition = PipelineDefinition()
 
     def test_build_from_yaml(self):

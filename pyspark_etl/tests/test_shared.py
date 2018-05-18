@@ -1,15 +1,19 @@
+import warnings
 from unittest import TestCase
 from uuid import uuid4
 
 from pyspark import SparkContext
 from pyspark.sql import Row, SparkSession
+from six import PY3
 
-from core import errors
-from core.shared import Shared
+from pyspark_etl.core import errors
+from pyspark_etl.core.shared import Shared
 
 
 class TestShared(TestCase):
     def setUp(self):
+        if PY3:
+            warnings.simplefilter('ignore', ResourceWarning)
         self.sc = SparkContext.getOrCreate()
         self.spark = SparkSession.Builder().appName('TestShared').getOrCreate()
         self.a_resource = [('first', 1), ('second', 2), ('third', 3)]

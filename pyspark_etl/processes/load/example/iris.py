@@ -1,5 +1,5 @@
-from core.base import PipelineProcessBase
-from core.shared import Shared
+from pyspark_etl.core.base import PipelineProcessBase
+from pyspark_etl.core.shared import Shared
 
 
 class SaveAsJSON(PipelineProcessBase):
@@ -29,5 +29,5 @@ class SaveTimeLogsFromTimeRecorder(PipelineProcessBase):
 
     def run(self):
         logs = str(Shared.get_resource('time_recorder'))
-        with open(self.log_file_path, 'wb') as time_log_file:
+        with open(self.log_file_path, 'wt') as time_log_file:
             time_log_file.write(logs)

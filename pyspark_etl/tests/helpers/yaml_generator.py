@@ -4,6 +4,7 @@ import tempfile
 from collections import OrderedDict
 from random import choice
 from uuid import uuid4
+from io import open
 
 import yaml
 
@@ -57,6 +58,9 @@ class ValidPipelineYAMLDefinitions(object):
     def __iter__(self):
         return self
 
+    def __next__(self):
+        return self.next()
+
     def next(self):
         if self.__old_file_path:
             try:
@@ -70,7 +74,7 @@ class ValidPipelineYAMLDefinitions(object):
 
         tmp_file, file_path = tempfile.mkstemp()
 
-        with os.fdopen(tmp_file, 'wb') as tmp_yaml_file:
+        with open(file_path, 'w', encoding='utf-8') as tmp_yaml_file:
             yaml.dump(self.combinations[self.__iter_index], tmp_yaml_file)
 
         self.__iter_index += 1

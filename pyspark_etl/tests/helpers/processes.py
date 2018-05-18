@@ -1,7 +1,7 @@
 import os
 
-from core.base import PipelineProcessBase
-from core.shared import Shared
+from pyspark_etl.core.base import PipelineProcessBase
+from pyspark_etl.core.shared import Shared
 
 import csv
 
@@ -172,7 +172,7 @@ class ProcessLoadDumpResultListToCSV(PipelineProcessBase):
 
     def run(self):
         l = Shared.get_resource(self.list_name)
-        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), self.output_file_name), 'wb') as out_file:
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), self.output_file_name), 'w') as out_file:
             writer = csv.writer(out_file)
             writer.writerow(['id', 'number'])
             for id, i in zip(range(10), l):

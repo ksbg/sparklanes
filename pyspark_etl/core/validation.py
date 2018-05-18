@@ -3,8 +3,8 @@ from importlib import import_module
 
 from schema import Schema, SchemaError, Optional, Or
 
-from core import errors
-from core.base import PipelineProcessBase
+from pyspark_etl.core import errors
+from pyspark_etl.core.base import PipelineProcessBase
 
 
 def validate_pipeline_dict_schema(pipeline_dict):
@@ -37,10 +37,13 @@ def validate_and_get_class(cls_path, shared=False):
     :return: (class) The validated class
     """
     sep = cls_path.rfind('.')
+    pkg = 'pyspark_etl.' + cls_path[:sep]
+    module = cls_path[sep + 1:]
+
     try:
-        cls = getattr(import_module(cls_path[:sep]), cls_path[sep + 1:])
+        cls = getattr(import_module(pkg), module)
     except ImportError:
-        raise errors.PipelineModuleNotFoundError('Could not find module %s' % cls_path[:sep])
+        raise errors.PipelineModuleNotFoundError('Could not find module %s' % module)
     except AttributeError:
         raise errors.PipelineClassNotFoundError('Could not find class %s in module %s'
                                                 % (cls_path[sep + 1:], cls_path[:sep]))

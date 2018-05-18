@@ -1,5 +1,5 @@
-from core.base import PipelineProcessBase
-from core.shared import Shared
+from pyspark_etl.core.base import PipelineProcessBase
+from pyspark_etl.core.shared import Shared
 
 
 class ExtractIrisCSVData(PipelineProcessBase):
