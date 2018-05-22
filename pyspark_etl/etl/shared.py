@@ -126,6 +126,18 @@ class Shared(object):
         Shared.__resources = OrderedDict()
 
     @staticmethod
+    def rdd_exists(name):
+        return True if name in Shared.__rdds.keys() else False
+
+    @staticmethod
+    def df_exists(name):
+        return True if name in Shared.__data_frames.keys() else False
+
+    @staticmethod
+    def resource_exists(name):
+        return True if name in Shared.__resources.keys() else False
+
+    @staticmethod
     def __delete(name, res_type):
         try:
             if res_type == 'resource':
