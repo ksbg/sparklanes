@@ -1,22 +1,22 @@
-processes:
+processors:
   extract:
-    class: processes.extract.example.iris.ExtractIrisCSVData           # The extractor class
+    class: processors.extract.example.iris.ExtractIrisCSVData           # The extractor class
     kwargs:
       iris_csv_path: ../examples/iris.csv                              # The path to the iris csv file, relative to the module root
   transform:
-    - class: processes.transform.example.iris.NormalizeColumns         # The first transformer class
+    - class: processors.transform.example.iris.NormalizeColumns         # The first transformer class
       kwargs:
         record_time: true                                              # Indicate that time should be logged using shared time_recorder
-    - class: processes.transform.example.iris.AddRowIndex              # The second transformer class
+    - class: processors.transform.example.iris.AddRowIndex              # The second transformer class
       kwargs:
         record_time: true                                              # Indicate that time should be logged using shared time_recorder
   load:
-    - class: processes.load.example.iris.SaveAsJSON                    # The first loader class
+    - class: processors.load.example.iris.SaveAsJSON                    # The first loader class
       kwargs:
         output_folder: ../dist/out                                     # Output folder where Spark will store the JSON file (and artifacts)
-    - class: processes.load.example.iris.SaveTimeLogsFromTimeRecorder  # The second loader class
+    - class: processors.load.example.iris.SaveTimeLogsFromTimeRecorder  # The second loader class
       kwargs:
         log_file_path: ../dist/time_logs.txt                           # Path to the file where time logs should be written to
 shared:
-  - resource_name: time_recorder                                       # Name of the resource (other processes use this name to access the resource)
+  - resource_name: time_recorder                                       # Name of the resource (other processors use this name to access the resource)
     class: shared.example.iris.TimeRecorder                            # The shared class

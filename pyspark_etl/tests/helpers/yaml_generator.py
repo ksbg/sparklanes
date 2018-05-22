@@ -20,11 +20,11 @@ class ValidPipelineYAMLDefinitions(object):
             - One kwarg present
             - Three kwargs present
             --> 4 possible single-process steps
-        - Each step and shared resource can either have a single process as a dict, or multiple processes in a list.
-          Steps with two and three processes are also checked, while all multi-process steps together cover all possible
+        - Each step and shared resource can either have a single process as a dict, or multiple processors in a list.
+          Steps with two and three processors are also checked, while all multi-process steps together cover all possible
           kwargs definitions that are possible
           --> 6 possible two-process steps, 4 possible three-process steps
-        --> This holds true for processes.extract, processes.transform, processes.load and shared. A combination of all
+        --> This holds true for processors.extract, processors.transform, processors.load and shared. A combination of all
             is generated, which results in (4+6+4)^4 = 38416 possible combinations that can be tested
     This class implements an iterator, which, in each iteration, writes the pipeline definition as YAML to a file in the
     OS' temp dir and returns a stream to that file, so it can simply be used as in:
@@ -40,17 +40,17 @@ class ValidPipelineYAMLDefinitions(object):
                              'without_kwargs': {'class': 'cls'},
                              'with_empty_kwargs': {'class': 'cls', 'kwargs': None},
                              'with_three_kwargs': {'class': 'cls', 'kwargs': {'a': 'a', 'b': 'b', 'c': 'c'}}}
-        test_cls_mdl = 'tests.helpers.processes.'
-        self.__classes = {'with_one_kwarg': [test_cls_mdl + 'ProcessWithOnePositionalArg',
-                                             test_cls_mdl + 'ProcessWithOneOptionalArg',
-                                             test_cls_mdl + 'ProcessWithOnePositionalAndTwoOptionalArgs'],
-                          'without_kwargs': [test_cls_mdl + 'ProcessWithoutArgs',
-                                             test_cls_mdl + 'ProcessWithOneOptionalArg'],
-                          'with_empty_kwargs': [test_cls_mdl + 'ProcessWithoutArgs',
-                                                test_cls_mdl + 'ProcessWithOneOptionalArg'],
-                          'with_three_kwargs': [test_cls_mdl + 'ProcessWithThreePositionalArgs',
-                                                test_cls_mdl + 'ProcessWithThreeOptionalArgs',
-                                                test_cls_mdl + 'ProcessWithOnePositionalAndTwoOptionalArgs']}
+        test_cls_mdl = 'tests.helpers.processors.'
+        self.__classes = {'with_one_kwarg': [test_cls_mdl + 'ProcessorWithOnePositionalArg',
+                                             test_cls_mdl + 'ProcessorWithOneOptionalArg',
+                                             test_cls_mdl + 'ProcessorWithOnePositionalAndTwoOptionalArgs'],
+                          'without_kwargs': [test_cls_mdl + 'ProcessorWithoutArgs',
+                                             test_cls_mdl + 'ProcessorWithOneOptionalArg'],
+                          'with_empty_kwargs': [test_cls_mdl + 'ProcessorWithoutArgs',
+                                                test_cls_mdl + 'ProcessorWithOneOptionalArg'],
+                          'with_three_kwargs': [test_cls_mdl + 'ProcessorWithThreePositionalArgs',
+                                                test_cls_mdl + 'ProcessorWithThreeOptionalArgs',
+                                                test_cls_mdl + 'ProcessorWithOnePositionalAndTwoOptionalArgs']}
         self.combinations = self.generate_combinations()
         self.__iter_index, self.iter_len = 0, len(self.combinations)
         self.__old_file_path = ''
@@ -89,7 +89,7 @@ class ValidPipelineYAMLDefinitions(object):
         shared = self.__generate_combinations_per_process('shared', 'resource_name')
         combs_with_shared = list(itertools.product(*[process_combs, shared]))
 
-        return [OrderedDict([('processes', c[0]), ('shared', c[1]['shared'])]) for c in combs_with_shared]
+        return [OrderedDict([('processors', c[0]), ('shared', c[1]['shared'])]) for c in combs_with_shared]
 
     def __generate_combinations_per_process(self, proc, extra_field=None):
         possible_defs = []

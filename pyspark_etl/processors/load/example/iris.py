@@ -1,8 +1,8 @@
-from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.base import PipelineProcessorBase
 from pyspark_etl.etl.shared import Shared
 
 
-class SaveAsJSON(PipelineProcessBase):
+class SaveAsJSON(PipelineProcessorBase):
     def __init__(self, output_folder, record_time=False, **kwargs):
         self.output_folder = output_folder
         self.record_time = record_time
@@ -22,7 +22,7 @@ class SaveAsJSON(PipelineProcessBase):
             Shared.get_resource('time_recorder').register_end(self.__class__.__name__)
 
 
-class SaveTimeLogsFromTimeRecorder(PipelineProcessBase):
+class SaveTimeLogsFromTimeRecorder(PipelineProcessorBase):
     def __init__(self, log_file_path, **kwargs):
         self.log_file_path = log_file_path
         super(SaveTimeLogsFromTimeRecorder, self).__init__(**kwargs)

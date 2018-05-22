@@ -8,7 +8,7 @@ from unittest import TestCase
 from six import PY3
 
 from pyspark_etl.etl.pipeline import PipelineDefinition, Pipeline
-from pyspark_etl.tests.helpers import processes
+from pyspark_etl.tests.helpers import processors
 
 
 class TestFunctionalExtractTransformLoadCSV(TestCase):
@@ -31,13 +31,13 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
         expected_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_expected.csv')
 
         pd = PipelineDefinition()
-        pd.add_extractor(cls=processes.ProcessExtractIntsFromCSV,
+        pd.add_extractor(cls=processors.ProcessorExtractIntsFromCSV,
                          kwargs={'csv_path': input_csv})
-        pd.add_transformer(processes.ProcessTransformConvertDataFrameToList,
+        pd.add_transformer(processors.ProcessorTransformConvertDataFrameToList,
                            kwargs={'output_shared_list_name': 'ints_df_as_list'})
-        pd.add_transformer(processes.ProcessTransformMultiplyIntsInSharedListByTwo,
+        pd.add_transformer(processors.ProcessorTransformMultiplyIntsInSharedListByTwo,
                            kwargs={'list_name': 'ints_df_as_list'})
-        pd.add_loader(processes.ProcessLoadDumpResultListToCSV,
+        pd.add_loader(processors.ProcessorLoadDumpResultListToCSV,
                       kwargs={'list_name': 'ints_df_as_list', 'output_file_name': 'res/func_pl_data_out.csv'})
         pipeline = Pipeline(definition=pd)
         pipeline.run()

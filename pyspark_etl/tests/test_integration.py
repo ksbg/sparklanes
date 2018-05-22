@@ -10,7 +10,7 @@ from six import PY3
 from pyspark_etl.etl import errors
 from pyspark_etl.etl.pipeline import PipelineDefinition, Pipeline
 from pyspark_etl.etl.shared import Shared
-from pyspark_etl.tests.helpers import processes
+from pyspark_etl.tests.helpers import processors
 from pyspark_etl.tests.helpers.yaml_generator import ValidPipelineYAMLDefinitions
 
 
@@ -64,11 +64,11 @@ class TestFromYAMLToPipeline(TestCase):
            contains the same data defined in the pipeline definition. """
         for def_type, p_processes in pipeline.processes.items():
             for i in range(len(p_processes)):
-                # Turn single non-list processes into a list (to access it more easily)
-                if isinstance(pd_dict['processes'][def_type], dict):
-                    dict_processes = [pd_dict['processes'][def_type]]
+                # Turn single non-list processors into a list (to access it more easily)
+                if isinstance(pd_dict['processors'][def_type], dict):
+                    dict_processes = [pd_dict['processors'][def_type]]
                 else:
-                    dict_processes = pd_dict['processes'][def_type]
+                    dict_processes = pd_dict['processors'][def_type]
 
                 # Check if grabbed class and kwargs in definition are the same is in YAML
                 self.assertEqual('%s.%s' % (pd.processes[def_type][i]['class'].__module__,
@@ -86,7 +86,7 @@ class TestFromYAMLToPipeline(TestCase):
 
 
 class TestSharedObjectPassingBetweenProcesses(TestCase):
-    """Checks if shared resources, data frames and RDDs are shared correctly between processes"""
+    """Checks if shared resources, data frames and RDDs are shared correctly between processors"""
 
     def setUp(self):
         # Init spark
@@ -98,16 +98,16 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
         res_name = 'int_list'
 
         # Run process that checks for non-existing resource
-        proc = processes.ProcessCheckIfSharedObjectExists(name=res_name, res_type='shared')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=res_name, res_type='shared')
         self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
         # Add a list of integers to shared resources
         res = [100, 200, 300, 400, 500]
-        proc = processes.ProcessAddSharedObject(name=res_name, res_type='shared', o=res)
+        proc = processors.ProcessorAddSharedObject(name=res_name, res_type='shared', o=res)
         proc.run()
 
         # Run process that checks for non-existing resource again (should not throw exception now)
-        proc = processes.ProcessCheckIfSharedObjectExists(name=res_name, res_type='shared')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=res_name, res_type='shared')
         try:
             proc.run()
         except Exception as e:
@@ -115,7 +115,7 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
                                                                str(e)))
 
         # Run process which multiplies all numbers in the list by 2 (run two times)
-        proc = processes.ProcessMultiplyIntsInSharedListByTwo(resource_name=res_name)
+        proc = processors.ProcessorMultiplyIntsInSharedListByTwo(resource_name=res_name)
         proc.run()
         proc.run()
 
@@ -123,18 +123,18 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
         self.assertEqual(Shared.get_resource(res_name), [400, 800, 1200, 1600, 2000])
 
         # Delete the shared resource
-        proc = processes.ProcessDeleteSharedObject(name=res_name, res_type='shared')
+        proc = processors.ProcessorDeleteSharedObject(name=res_name, res_type='shared')
         proc.run()
 
         # Run process that checks for non-existing resource (should throw exception again)
-        proc = processes.ProcessCheckIfSharedObjectExists(name=res_name, res_type='shared')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=res_name, res_type='shared')
         self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
     def test_integration_passing_of_shared_data_frames(self):
         df_name = 'abc'
 
         # Run process that checks for non-existing resource
-        proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
         self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)
 
         # Generate data frame with 10 rows (an index and a column with random numbers, rand_a and rand_b)
@@ -145,11 +145,11 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
         rand_as_list = [i.random for i in df.collect()]
 
         # Add to Shared
-        proc = processes.ProcessAddSharedObject(name=df_name, res_type='data_frame', o=df)
+        proc = processors.ProcessorAddSharedObject(name=df_name, res_type='data_frame', o=df)
         proc.run()
 
         # Run process that checks for non-existing resource again (should not throw exception now)
-        proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
         try:
             proc.run()
         except Exception as e:
@@ -157,12 +157,12 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
                                                                str(e)))
 
         # Run process which adds a column (which is the 'random' column multiplied by 10)
-        proc = processes.ProcessAddColumnToDataFrameFromRandomColumn(df_name=df_name, multiply_by=10,
-                                                                     col_name='random10')
+        proc = processors.ProcessorAddColumnToDataFrameFromRandomColumn(df_name=df_name, multiply_by=10,
+                                                                        col_name='random10')
         proc.run()
         # And another one (random * 100)
-        proc = processes.ProcessAddColumnToDataFrameFromRandomColumn(df_name=df_name, multiply_by=100,
-                                                                     col_name='random100')
+        proc = processors.ProcessorAddColumnToDataFrameFromRandomColumn(df_name=df_name, multiply_by=100,
+                                                                        col_name='random100')
         proc.run()
 
         # Get updated data frame
@@ -175,9 +175,9 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
             self.assertEqual([i[col_name] for i in df.collect()], expected_vals)
 
         # Delete data frame
-        proc = processes.ProcessDeleteSharedObject(name=df_name, res_type='data_frame')
+        proc = processors.ProcessorDeleteSharedObject(name=df_name, res_type='data_frame')
         proc.run()
 
         # Run process that checks for non-existing resource (should throw exception again)
-        proc = processes.ProcessCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
+        proc = processors.ProcessorCheckIfSharedObjectExists(name=df_name, res_type='data_frame')
         self.assertRaises(errors.PipelineSharedResourceNotFound, proc.run)

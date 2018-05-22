@@ -4,7 +4,7 @@ from importlib import import_module
 from schema import Schema, SchemaError, Optional, Or
 
 from pyspark_etl.etl import errors
-from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.base import PipelineProcessorBase
 
 
 def validate_pipeline_dict_schema(pipeline_dict):
@@ -17,9 +17,9 @@ def validate_pipeline_dict_schema(pipeline_dict):
     transform_load_format = {'class': str, Optional('kwargs'): Or({str: object}, None)}
     shared_format = {'resource_name': str, 'class': str, Optional('kwargs'): Or({str: object}, None)}
 
-    schema = Schema({'processes': {'extract': Or([extract_format], extract_format),
-                                   Optional('transform'): Or([transform_load_format], transform_load_format),
-                                   'load': Or([transform_load_format], transform_load_format)},
+    schema = Schema({'processors': {'extract': Or([extract_format], extract_format),
+                                    Optional('transform'): Or([transform_load_format], transform_load_format),
+                                    'load': Or([transform_load_format], transform_load_format)},
                      Optional('shared'): Or([shared_format], shared_format)})
     try:
         return schema.validate(pipeline_dict)
@@ -31,7 +31,7 @@ def validate_and_get_class(cls_path, shared=False):
     """
     Checks whether the supplied class meets the requirements:
     - Does the class under the specified path exist?
-    - Is the class a child of etl.base.PipelineProcessBase? (not checked for shared classes)
+    - Is the class a child of etl.base.PipelineProcessorBase? (not checked for shared classes)
     :param cls_path: (str) full path to the class, relative from the module root
     :param shared: (boolean) indicates whether the class to be checked is a shared object
     :return: (class) The validated class
@@ -52,9 +52,9 @@ def validate_and_get_class(cls_path, shared=False):
 
 
 def validate_processor_parent(cls):
-    """Checks whether the class is a child of etl.base.PipelineProcessBase"""
-    if not issubclass(cls, PipelineProcessBase):
-        raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessBase)'
+    """Checks whether the class is a child of etl.base.PipelineProcessorBase"""
+    if not issubclass(cls, PipelineProcessorBase):
+        raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessorBase)'
                                                % cls.__name__)
 
     return cls
@@ -73,7 +73,7 @@ def validate_class_args(cls, passed_args):
         passed_args = {}
 
     # Inspect class arguments
-    super_cls_args = inspect.getargspec(PipelineProcessBase.__init__)[0]
+    super_cls_args = inspect.getargspec(PipelineProcessorBase.__init__)[0]
     arg_spec = inspect.getargspec(cls.__init__)
     args = arg_spec[0]
     for arg in args:

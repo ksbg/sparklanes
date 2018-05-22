@@ -2,11 +2,11 @@ from __future__ import division
 
 from pyspark.sql.functions import monotonically_increasing_id
 
-from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.base import PipelineProcessorBase
 from pyspark_etl.etl.shared import Shared
 
 
-class AddRowIndex(PipelineProcessBase):
+class AddRowIndex(PipelineProcessorBase):
     def __init__(self, record_time, **kwargs):
         self.record_time = record_time
         super(AddRowIndex, self).__init__(**kwargs)
@@ -30,7 +30,7 @@ class AddRowIndex(PipelineProcessBase):
             Shared.get_resource('time_recorder').register_end(self.__class__.__name__)
 
 
-class NormalizeColumns(PipelineProcessBase):
+class NormalizeColumns(PipelineProcessorBase):
     def __init__(self, record_time, **kwargs):
         self.record_time = record_time
         super(NormalizeColumns, self).__init__(**kwargs)

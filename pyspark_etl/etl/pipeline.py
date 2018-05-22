@@ -18,7 +18,7 @@ class PipelineDefinition(object):
         self.shared = []
 
     def __str__(self):
-        """Creates a printable overview of the pipeline's processes"""
+        """Creates a printable overview of the pipeline's processors"""
         table = list()
         table.append(['Pipeline consists of the following tasks (to be performed in descending order):'])
         proc_table = [[step, proc['class'], proc['kwargs'] if 'kwargs' in proc.keys() else None]
@@ -65,7 +65,7 @@ class PipelineDefinition(object):
         """
         Used to add a shared class to the pipeline definition
         :param cls: (str) The extractor class
-        :param resource_name: (str) The name of the shared resource name, with which other processes can access it
+        :param resource_name: (str) The name of the shared resource name, with which other processors can access it
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
         """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
@@ -81,8 +81,8 @@ class PipelineDefinition(object):
 
         for step, unique_kwarg in zip(['extract', 'transform', 'load', 'shared'],
                                       [None, None, None, 'resource_name']):  # TODO
-            if step in pipeline_dict['processes'].keys() or step in pipeline_dict.keys():
-                prs = pipeline_dict['processes'][step] if step != 'shared' else pipeline_dict[step]
+            if step in pipeline_dict['processors'].keys() or step in pipeline_dict.keys():
+                prs = pipeline_dict['processors'][step] if step != 'shared' else pipeline_dict[step]
                 prs = [prs] if isinstance(prs, dict) else prs
                 for p in prs:
                     if 'kwargs' not in p.keys():

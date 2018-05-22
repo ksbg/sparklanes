@@ -5,7 +5,7 @@ from six import PY3
 
 from pyspark_etl.etl import errors
 from pyspark_etl.etl.pipeline import PipelineDefinition
-from pyspark_etl.tests.helpers import processes
+from pyspark_etl.tests.helpers import processors
 
 
 class TestPipelineDefinition(TestCase):
@@ -48,7 +48,7 @@ class TestPipelineDefinition(TestCase):
         wrapped."""
         # Invalid class (not inherited from base processor class)
         args = ((TestCase, None),
-                (processes.ProcessNotInherited, None))
+                (processors.ProcessNotInherited, None))
         for packed_args in args:
             packed_args = packed_args if not unique_kwarg else (packed_args[0], 'a_name', packed_args[1])
             self.assertRaises(errors.PipelineInvalidClassError, mtd, *packed_args)
@@ -58,23 +58,23 @@ class TestPipelineDefinition(TestCase):
                 ('2', None),
                 ([1, 2, 3], None),
                 (None, None),
-                (processes.ProcessWithOnePositionalArg, [1, 2, 3]),
-                (processes.ProcessWithOnePositionalArg, 1),
-                (processes.ProcessWithOnePositionalArg, '1'))
+                (processors.ProcessorWithOnePositionalArg, [1, 2, 3]),
+                (processors.ProcessorWithOnePositionalArg, 1),
+                (processors.ProcessorWithOnePositionalArg, '1'))
         for packed_args in args:
             packed_args = packed_args if not unique_kwarg else (packed_args[0], 'a_name', packed_args[1])
             self.assertRaises((AttributeError, TypeError), mtd, *packed_args)
 
         # Invalid kwargs
-        args = ((processes.ProcessWithOnePositionalArg, {'a': 100, 'b': 200}),  # Too many kwargs
-                (processes.ProcessWithoutArgs, {'a': 100}),  # Too many kwargs
-                (processes.ProcessWithThreeOptionalArgs, {'a': 100, 'b': 200, 'c': 300, 'd': 400}),  # Too many kwargs
-                (processes.ProcessWithOnePositionalArg, None),  # Too few kwargs
-                (processes.ProcessWithOnePositionalAndTwoOptionalArgs, {}),  # Too few kwargs
-                (processes.ProcessWithThreePositionalArgs, {'a': 100, 'b': 200}),  # Too few kwargs
-                (processes.ProcessWithThreeOptionalArgs, {'d': 400, 'e': 500, 'f': 600}),  # Invalid kwarg names
-                (processes.ProcessWithOnePositionalAndTwoOptionalArgs, {'d': 400, 'e': 500, 'f': 600}),  # ""
-                (processes.ProcessWithOnePositionalArg, {'d': 400, 'e': 500, 'f': 600}))  # Invalid kwarg names
+        args = ((processors.ProcessorWithOnePositionalArg, {'a': 100, 'b': 200}),  # Too many kwargs
+                (processors.ProcessorWithoutArgs, {'a': 100}),  # Too many kwargs
+                (processors.ProcessorWithThreeOptionalArgs, {'a': 100, 'b': 200, 'c': 300, 'd': 400}),  # Too many kwargs
+                (processors.ProcessorWithOnePositionalArg, None),  # Too few kwargs
+                (processors.ProcessorWithOnePositionalAndTwoOptionalArgs, {}),  # Too few kwargs
+                (processors.ProcessorWithThreePositionalArgs, {'a': 100, 'b': 200}),  # Too few kwargs
+                (processors.ProcessorWithThreeOptionalArgs, {'d': 400, 'e': 500, 'f': 600}),  # Invalid kwarg names
+                (processors.ProcessorWithOnePositionalAndTwoOptionalArgs, {'d': 400, 'e': 500, 'f': 600}),  # ""
+                (processors.ProcessorWithOnePositionalArg, {'d': 400, 'e': 500, 'f': 600}))  # Invalid kwarg names
         for packed_args in args:
             packed_args = packed_args if not unique_kwarg else (packed_args[0], 'a_name', packed_args[1])
             self.assertRaises(errors.PipelineInvalidClassArgumentsError, mtd, *packed_args)

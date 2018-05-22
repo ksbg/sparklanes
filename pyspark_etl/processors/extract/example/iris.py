@@ -1,8 +1,8 @@
-from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.base import PipelineProcessorBase
 from pyspark_etl.etl.shared import Shared
 
 
-class ExtractIrisCSVData(PipelineProcessBase):
+class ExtractIrisCSVData(PipelineProcessorBase):
     def __init__(self, iris_csv_path, record_time=False, **kwargs):
         self.iris_csv_path = iris_csv_path
         self.record_time = record_time
@@ -19,7 +19,7 @@ class ExtractIrisCSVData(PipelineProcessBase):
                                       header=True,
                                       inferSchema=True)
 
-        # Store in Shared class, so it can be accessed by other processes
+        # Store in Shared class, so it can be accessed by other processors
         Shared.add_data_frame(name='iris', df=iris_df)
 
         # Record end time

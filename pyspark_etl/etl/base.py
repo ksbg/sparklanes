@@ -4,8 +4,8 @@ from pyspark import SparkContext
 from pyspark.sql import SparkSession
 
 
-class PipelineProcessBase(object):
-    """Base class from which all pipeline processes must inherit"""
+class PipelineProcessorBase(object):
+    """Base class from which all pipeline processors must inherit"""
     __metaclass__ = ABCMeta
 
     def __init__(self, spark_app_name='pyspark-etl'):
