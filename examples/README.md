@@ -28,8 +28,8 @@ Unlike generic shared objects, processes must inherit from the abstract class `P
 First, let's write our extract process. We'll name it `ExtractIrisCSVData`.
 
 ```python
-from core.base import PipelineProcessBase
-from core.shared import Shared
+from etl.base import PipelineProcessBase
+from etl.shared import Shared
 
 
 class ExtractIrisCSVData(PipelineProcessBase):
@@ -50,7 +50,7 @@ class ExtractIrisCSVData(PipelineProcessBase):
                                       inferSchema=True)
 
         # Store in Shared class, so it can be accessed by other processes
-        Shared.add_data_frame(name=self.data_frame_name,
+        Shared.add_data_frame(name='iris',
                               df=iris_df)
 
         # Record end time
@@ -117,8 +117,7 @@ We'll define the pipeline configuration file as follows:
 ```yaml
 processes:
   extract:
-    data_frame_name: iris                                             
-    class: processes.extract.example.iris.ExtractIrisCSVData           
+    class: processes.extract.example.iris.ExtractIrisCSVData
     kwargs:
       iris_csv_path: ../examples/iris.csv                             
   transform:

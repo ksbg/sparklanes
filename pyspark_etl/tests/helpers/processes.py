@@ -1,7 +1,7 @@
 import os
 
-from pyspark_etl.core.base import PipelineProcessBase
-from pyspark_etl.core.shared import Shared
+from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.shared import Shared
 
 import csv
 
@@ -141,7 +141,7 @@ class ProcessExtractIntsFromCSV(PipelineProcessBase):
     def run(self):
         df = self.spark.read.csv(path=self.csv_path,
                                  header=True)
-        Shared.add_data_frame(self.data_frame_name, df)
+        Shared.add_data_frame('ints_df', df)
 
 
 class ProcessTransformConvertDataFrameToList(PipelineProcessBase):

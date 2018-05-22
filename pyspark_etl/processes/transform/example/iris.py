@@ -2,8 +2,8 @@ from __future__ import division
 
 from pyspark.sql.functions import monotonically_increasing_id
 
-from pyspark_etl.core.base import PipelineProcessBase
-from pyspark_etl.core.shared import Shared
+from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.shared import Shared
 
 
 class AddRowIndex(PipelineProcessBase):

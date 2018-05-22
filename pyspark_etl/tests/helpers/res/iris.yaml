@@ -1,6 +1,5 @@
 processes:
   extract:
-    data_frame_name: iris                                              # The data frame name under which the extracted data should be stored (other processes use this name to access the data_frame)
     class: processes.extract.example.iris.ExtractIrisCSVData           # The extractor class
     kwargs:
       iris_csv_path: ../pyspark_etl/tests/helpers/res/iris.csv                              # The path to the iris csv file, relative to the module root

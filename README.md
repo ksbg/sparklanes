@@ -6,7 +6,7 @@ for _pyspark_ (Apache Spark's python API). Its goal is to allow you
 to focus on the important tasks - writing data processors - without having to spend much time dealing with things such as
 packaging your code for spark submission, stringing processors together, or designing your application architecture.
 
-At their core, the data processors you will write are encapsulated and work independently from one another.
+At their etl, the data processors you will write are encapsulated and work independently from one another.
 This means you can define pipelines with an arbitrary process order, and easily remove, add or swap out processors.
 
 You can define pipelines using _pipeline configuration files_ (or manually, using the framework's API), to then package 
@@ -42,7 +42,6 @@ configuration should look as follows:
 ```yaml
 processes:                                        # (dict) (required) ETL processes
   extract:                                        # (list[dict] | dict) (required) Extract processes
-    data_frame_name: df_name                      # (str) (required) The data frame name which the extractor will create
     class: processes.extract.ExtractClass         # (str) (required) Full path to the class, relative to module root
     kwargs:                                       # (dict) (optional) Keyword arguments used to instantiate the class
       kwarg_name_a: value_a                       # (str) (optional)  Keyword argument and its value
@@ -74,12 +73,11 @@ API. The same pipeline could be built as follows:
 ```python
 import processes 
 import shared 
-from core.pipeline import PipelineDefinition, Pipeline
+from etl.pipeline import PipelineDefinition, Pipeline
 
 # Define the pipeline
 pd = PipelineDefinition()
-pd.add_extractor(cls=processes.extract.ExtractClass, 
-                 data_frame_name='df_name', 
+pd.add_extractor(cls=processes.extract.ExtractClass,
                  kwargs={'kwarg_name_a': 'value_a', 'kwarg_name_b': 'value_b'})
 pd.add_transformer(cls=processes.transform.TransformClass1,
                    kwargs={'kwarg_name': 'value'})
@@ -101,11 +99,11 @@ Writing Custom Processes
 ------------------------
 
 Each process must inherit from the abstract class
-`core.base.PipelineProcessBase` and implement the abstract method
+`etl.base.PipelineProcessBase` and implement the abstract method
 `run()`, which will be called during pipeline execution. For example:
 
 ```python
-from core.base import PipelineProcessBase
+from etl.base import PipelineProcessBase
 
 
 class CustomProcess(PipelineProcessBase):
@@ -131,7 +129,7 @@ among processes. Shared classes can be any valid python classes and have no spec
 Inside a process, they can be accessed and manipulated as follows:
 
 ```python
-from core.shared import Shared
+from etl.shared import Shared
 
 Shared.get_resource(name='resource_name')  # Retrieve a shared resource
 Shared.update_resource(name='resource_name', res=updated_resource)  # Update an existing shared resource
@@ -140,7 +138,7 @@ Shared.delete_resource(name='resource_name')  # Delete an existing shared resour
 ```
 
 `Shared` also provides methods to share Spark `DataFrames` and `RDD`s
-between processes (see the [shared module](pyspark_etl/core/shared.py)).
+between processes (see the [shared module](pyspark_etl/etl/shared.py)).
 
 
 Packaging and Submitting a Pipeline to Spark

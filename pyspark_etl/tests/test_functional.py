@@ -7,7 +7,7 @@ from unittest import TestCase
 
 from six import PY3
 
-from pyspark_etl.core.pipeline import PipelineDefinition, Pipeline
+from pyspark_etl.etl.pipeline import PipelineDefinition, Pipeline
 from pyspark_etl.tests.helpers import processes
 
 
@@ -32,7 +32,6 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
 
         pd = PipelineDefinition()
         pd.add_extractor(cls=processes.ProcessExtractIntsFromCSV,
-                         data_frame_name='ints_df',
                          kwargs={'csv_path': input_csv})
         pd.add_transformer(processes.ProcessTransformConvertDataFrameToList,
                            kwargs={'output_shared_list_name': 'ints_df_as_list'})

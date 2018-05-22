@@ -6,8 +6,8 @@ from pyspark import SparkContext
 from six import class_types
 from tabulate import tabulate
 
-from pyspark_etl.core import validation, errors
-from pyspark_etl.core.shared import Shared
+from pyspark_etl.etl import validation, errors
+from pyspark_etl.etl.shared import Shared
 
 
 class PipelineDefinition(object):
@@ -34,16 +34,14 @@ class PipelineDefinition(object):
 
         return '\n%s\n' % tabulate(table)
 
-    def add_extractor(self, cls, data_frame_name, kwargs=None):
+    def add_extractor(self, cls, kwargs=None):
         """
         Used to add an extractor class to the pipeline definition
         :param cls: (str) The extractor class
-        :param data_frame_name: (str) The name of the data frame to be created inside the extract process
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
         """
         self.__add_resource(definition=self.__build_resource_definition_dict(cls, kwargs),
-                            def_type='extract',
-                            unique_kwarg=data_frame_name)
+                            def_type='extract')
 
     def add_transformer(self, cls, kwargs=None):
         """
@@ -82,7 +80,7 @@ class PipelineDefinition(object):
         pipeline_dict = validation.validate_pipeline_dict_schema(pipeline_dict)
 
         for step, unique_kwarg in zip(['extract', 'transform', 'load', 'shared'],
-                                      ['data_frame_name', None, None, 'resource_name']):
+                                      [None, None, None, 'resource_name']):  # TODO
             if step in pipeline_dict['processes'].keys() or step in pipeline_dict.keys():
                 prs = pipeline_dict['processes'][step] if step != 'shared' else pipeline_dict[step]
                 prs = [prs] if isinstance(prs, dict) else prs
@@ -115,8 +113,6 @@ class PipelineDefinition(object):
         if not isinstance(definition['class'], class_types):
             raise TypeError('Supplied argument `cls` is not a class.')
         if def_type in ['extract', 'transform', 'load']:
-            if unique_kwarg:
-                definition['data_frame_name'] = unique_kwarg
             self.processes[def_type].append(definition)
         elif def_type == 'shared':
             if unique_kwarg:
@@ -151,9 +147,6 @@ class Pipeline(object):
                 for proc in self.processes[step]:
                     self.logger.info('Running `%s` process: `%s`'
                                      % (step, proc['class'].__module__ + '.' + proc['class'].__name__))
-                    if step == 'extract':
-                        proc['kwargs']['data_frame_name'] = proc['data_frame_name'] if 'kwargs' in proc.keys() else \
-                            {'data_frame_name': proc['data_frame_name']}
                     try:
                         proc = proc['class'](**proc['kwargs']) if 'kwargs' in proc.keys() else proc['class']()
                     except Exception as e:

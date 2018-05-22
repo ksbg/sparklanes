@@ -6,8 +6,8 @@ from pyspark import SparkContext
 from pyspark.sql import Row, SparkSession
 from six import PY3
 
-from pyspark_etl.core import errors
-from pyspark_etl.core.shared import Shared
+from pyspark_etl.etl import errors
+from pyspark_etl.etl.shared import Shared
 
 
 class TestShared(TestCase):

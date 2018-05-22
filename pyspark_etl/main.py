@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from io import open
 
-from pyspark_etl.core.pipeline import PipelineDefinition, Pipeline
+from pyspark_etl.etl.pipeline import PipelineDefinition, Pipeline
 
 
 def main():

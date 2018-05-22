@@ -4,7 +4,7 @@ from pyspark import RDD
 from pyspark.sql import DataFrame
 from six import string_types
 
-from pyspark_etl.core import errors
+from pyspark_etl.etl import errors
 
 
 class Shared(object):

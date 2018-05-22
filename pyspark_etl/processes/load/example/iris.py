@@ -1,5 +1,5 @@
-from pyspark_etl.core.base import PipelineProcessBase
-from pyspark_etl.core.shared import Shared
+from pyspark_etl.etl.base import PipelineProcessBase
+from pyspark_etl.etl.shared import Shared
 
 
 class SaveAsJSON(PipelineProcessBase):

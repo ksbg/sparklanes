@@ -82,7 +82,7 @@ class ValidPipelineYAMLDefinitions(object):
         return open(file_path, 'rb')
 
     def generate_combinations(self):
-        process_combs = list(itertools.product(*[self.__generate_combinations_per_process('extract', 'data_frame_name'),
+        process_combs = list(itertools.product(*[self.__generate_combinations_per_process('extract'),
                                                  self.__generate_combinations_per_process('transform'),
                                                  self.__generate_combinations_per_process('load')]))
         process_combs = [OrderedDict([(k, v) for i in c for k, v in i.items()]) for c in process_combs]

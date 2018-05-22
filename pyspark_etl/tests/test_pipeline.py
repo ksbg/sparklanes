@@ -3,8 +3,8 @@ from unittest import TestCase
 
 from six import PY3
 
-from pyspark_etl.core import errors
-from pyspark_etl.core.pipeline import PipelineDefinition
+from pyspark_etl.etl import errors
+from pyspark_etl.etl.pipeline import PipelineDefinition
 from pyspark_etl.tests.helpers import processes
 
 
@@ -32,7 +32,7 @@ class TestPipelineDefinition(TestCase):
             self.assertRaises(errors.PipelineSchemaError, self.example_definition.build_from_dict, arg)
 
     def test_add_extractor(self):
-        self.__test_extractor_transformer_loader(self.example_definition.add_extractor, True)
+        self.__test_extractor_transformer_loader(self.example_definition.add_extractor)
 
     def test_add_transformer(self):
         self.__test_extractor_transformer_loader(self.example_definition.add_transformer)
