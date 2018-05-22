@@ -41,6 +41,7 @@ class TestFromYAMLToPipeline(TestCase):
             try:
                 # Build definition
                 pd_dict = yaml.load(yaml_file_stream)
+                yaml_file_stream.close()
                 pd = PipelineDefinition()
                 pd.build_from_dict(pd_dict)
 
@@ -58,7 +59,7 @@ class TestFromYAMLToPipeline(TestCase):
             if self.counter % 1000 == 0:
                 print('Checked %s/%s definitions for integration test' % (self.counter, valid_definitions.iter_len))
 
-    def __check_definition_and_pipeline(self, pd_dict, pd, pipeline):  # TODO: also checked if shared are ok
+    def __check_definition_and_pipeline(self, pd_dict, pd, pipeline):
         """Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
            contains the same data defined in the pipeline definition. """
         for def_type, p_processes in pipeline.processes.items():

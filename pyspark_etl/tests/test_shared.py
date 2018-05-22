@@ -347,5 +347,20 @@ class TestShared(TestCase):
         for all_r in [Shared.get_all_resources(), Shared.get_all_data_frames(), Shared.get_all_rdds()]:
             self.assertEqual(len(all_r), 0)
 
+    def test_exists(self):
+        self.assertEqual(Shared.resource_exists('a'), False)
+        Shared.add_resource('a', [1, 2, 3])
+        self.assertEqual(Shared.resource_exists('a'), True)
+
+        self.assertEqual(Shared.rdd_exists('b'), False)
+        rdd = self.sc.parallelize((('1', 1), ('1', 1))).map(lambda x: Row(key=x[0], number=int(x[1])))
+        Shared.add_rdd('b', rdd)
+        self.assertEqual(Shared.rdd_exists('b'), True)
+
+        self.assertEqual(Shared.df_exists('c'), False)
+        df = self.spark.createDataFrame(rdd)
+        Shared.add_data_frame('c', df)
+        self.assertEqual(Shared.df_exists('c'), True)
+
     def tearDown(self):
         Shared.delete_all()

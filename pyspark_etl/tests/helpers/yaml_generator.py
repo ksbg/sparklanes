@@ -74,7 +74,7 @@ class ValidPipelineYAMLDefinitions(object):
 
         tmp_file, file_path = tempfile.mkstemp()
 
-        with open(file_path, 'w', encoding='utf-8') as tmp_yaml_file:
+        with os.fdopen(tmp_file, 'w') as tmp_yaml_file:
             yaml.dump(self.combinations[self.__iter_index], tmp_yaml_file)
 
         self.__iter_index += 1
