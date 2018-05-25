@@ -1,0 +1,48 @@
+processors:
+  extract:
+    class: processors.iris_extract.ExtractIrisCSVData           # The extractor class
+    kwargs:
+      iris_csv_path: iris.csv                              # The path to the iris csv file, relative to the module root
+  transform:
+    - class: processors.iris_transform.NormalizeColumns         # The first transformer class
+      kwargs:
+        record_time: true                                              # Indicate that time should be logged using shared time_recorder
+    - class: processors.iris_transform.AddRowIndex              # The second transformer class
+      kwargs:
+        record_time: true                                              # Indicate that time should be logged using shared time_recorder
+  load:
+    - class: processors.iris_load.SaveAsJSON                    # The first loader class
+      kwargs:
+        output_folder: /Users/kb/Documents/example/out                                     # Output folder where Spark will store the JSON file (and artifacts)
+    - class: processors.iris_load.SaveTimeLogsFromTimeRecorder  # The second loader class
+      kwargs:
+        log_file_path: /Users/kb/Documents/example/out/time_logs.txt                           # Path to the file where time logs should be written to
+shared:
+  - resource_name: time_recorder                                       # Name of the resource (other processors use this name to access the resource)
+    class: processors.iris_shared.TimeRecorder                            # The shared class
+
+
+- call: processors.iris_transform.NormalizeColumns         # The first transformer class
+  args: [1, 2, 3]
+  kwargs:
+    record_time: true                                              # Indicate that time should be logged using shared time_recorder
+- call: processors.iris_transform.AddRowIndex              # The second transformer class
+  kwargs:
+    record_time: true
+- branch:
+    call: processors.iris_transform.NormalizeColumns         # The first transformer class
+    args: [1, 2, 3]
+    kwargs:
+      record_time: true
+
+
+- first: first
+- second: second
+- branch:
+    - third1: third1
+- branch:
+    - third2: third2
+    - fourth: fourth
+- branch:
+    - third3: third3:
+- fifth: fifth
