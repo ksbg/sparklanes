@@ -12,7 +12,7 @@ class PipelineSchemaError(SchemaError):
     @property
     def code(self):
         c = super(PipelineSchemaError, self).code
-        return 'PipelineSchemaError: ' + c + '\nThe pipeline YAML file does not match the defined schema.'
+        return 'PipelineSchemaError: ' + c + '\nThe lane YAML file does not match the defined schema.'
 
 
 class PipelineModuleNotFoundError(Exception):
@@ -44,4 +44,13 @@ class PipelineSharedResourceNotFound(Exception):
 
 
 class PipelineSharedResourceTypeInvalid(Exception):
+    pass
+
+class CacheError(AttributeError):
+    pass
+
+class TaskInitializationError(Exception):
+    pass
+
+class TaskBuilderError(Exception):
     pass

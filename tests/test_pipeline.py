@@ -3,9 +3,9 @@ from unittest import TestCase
 
 from six import PY3
 
-from pysparketl.etl import errors
-from pysparketl.etl.pipeline import PipelineDefinition
-from pysparketl.tests.helpers import processors
+from sparklanes.framework import errors
+from sparklanes.framework.pipeline import PipelineDefinition
+from .helpers import processors
 
 
 class TestPipelineDefinition(TestCase):

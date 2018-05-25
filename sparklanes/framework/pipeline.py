@@ -6,21 +6,21 @@ from pyspark import SparkContext
 from six import class_types
 from tabulate import tabulate
 
-from pysparketl.etl import validation, errors
-from pysparketl.etl.shared import Shared
+from sparklanes.framework import validation, errors
+from sparklanes.framework.shared import Shared
 
 
 class PipelineDefinition(object):
-    """Pipeline definition class, from which a new pipeline can be created"""
+    """Lane definition class, from which a new lane can be created"""
 
     def __init__(self):
         self.processes = OrderedDict([('extract', []), ('transform', []), ('load', [])])
         self.shared = []
 
     def __str__(self):
-        """Creates a printable overview of the pipeline's processors"""
+        """Creates a printable overview of the lane's processors"""
         table = list()
-        table.append(['Pipeline consists of the following tasks (to be performed in descending order):'])
+        table.append(['Lane consists of the following tasks (to be performed in descending order):'])
         proc_table = [[step, proc['class'], proc['kwargs'] if 'kwargs' in proc.keys() else None]
                       for step, procs in self.processes.items() for proc in procs]
         table.append([tabulate(proc_table, headers=['Step', 'Class', 'Args'], tablefmt="rst")])
@@ -36,7 +36,7 @@ class PipelineDefinition(object):
 
     def add_extractor(self, cls, kwargs=None):
         """
-        Used to add an extractor class to the pipeline definition
+        Used to add an extractor class to the lane definition
         :param cls: (str) The extractor class
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
         """
@@ -45,7 +45,7 @@ class PipelineDefinition(object):
 
     def add_transformer(self, cls, kwargs=None):
         """
-        Used to add a transformer class to the pipeline definition
+        Used to add a transformer class to the lane definition
         :param cls: (str) The extractor class
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
         """
@@ -54,7 +54,7 @@ class PipelineDefinition(object):
 
     def add_loader(self, cls, kwargs=None):
         """
-        Used to add a loader class to the pipeline definition
+        Used to add a loader class to the lane definition
         :param cls: (str) The extractor class
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
         """
@@ -63,7 +63,7 @@ class PipelineDefinition(object):
 
     def add_shared(self, cls, resource_name, kwargs=None):
         """
-        Used to add a shared class to the pipeline definition
+        Used to add a shared class to the lane definition
         :param cls: (str) The extractor class
         :param resource_name: (str) The name of the shared resource name, with which other processors can access it
         :param kwargs: (dict) Dictionary of keyword arguments to be used when instantiating the class
@@ -74,8 +74,8 @@ class PipelineDefinition(object):
 
     def build_from_dict(self, pipeline_dict):
         """
-        Builds a pipeline definition from a schematized dict (see the docs for more information)
-        :param pipeline_dict: (dict) The pipeline definition dict
+        Builds a lane definition from a schematized dict (see the docs for more information)
+        :param pipeline_dict: (dict) The lane definition dict
         """
         pipeline_dict = validation.validate_pipeline_dict_schema(pipeline_dict)
 
@@ -96,7 +96,7 @@ class PipelineDefinition(object):
 
     def build_from_yaml(self, yaml_file_stream):
         """
-        Builds a pipeline from a schematized YAML file
+        Builds a lane from a schematized YAML file
         :param yaml_file_stream: A readable file stream to the YAML file
         """
         if not isinstance(yaml_file_stream, IOBase):
@@ -126,9 +126,9 @@ class Pipeline(object):
         if not isinstance(definition, PipelineDefinition):
             raise TypeError('Supplied argument is not of type `PipelineDefinition`')
         elif len(definition.processes['extract']) == 0:  # TODO: perform those checks at an earlier point
-            raise errors.PipelineError('There must be at least one extract process in the pipeline definition')
+            raise errors.PipelineError('There must be at least one extract process in the lane definition')
         elif len(definition.processes['load']) == 0:
-            raise errors.PipelineError('There must be at least one load process in the pipeline definition')
+            raise errors.PipelineError('There must be at least one load process in the lane definition')
 
         self.processes = definition.processes
         self.sc = SparkContext.getOrCreate() if sc is None else sc

@@ -7,8 +7,8 @@ from unittest import TestCase
 
 from six import PY3
 
-from pysparketl.etl.pipeline import PipelineDefinition, Pipeline
-from pysparketl.tests.helpers import processors
+from sparklanes.framework.pipeline import PipelineDefinition, Pipeline
+from .helpers import processors
 
 
 class TestFunctionalExtractTransformLoadCSV(TestCase):
@@ -18,7 +18,7 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
 
     def test_csv_example_pipeline_defined_manually(self):
         """
-        Checks the behavior of the entire pipeline. The following pipeline as defined in helpers/func_pl.yaml will be used:
+        Checks the behavior of the entire lane. The following lane as defined in helpers/func_pl.yaml will be used:
         Extract: Load a csv file from disk as a spark dataframe
         Transform: Convert the data frame to a list
         Transform: Multiply all numbers in the list by two
@@ -53,9 +53,9 @@ class TestFunctionalExtractTransformLoadCSV(TestCase):
 
     def test_iris_example_pipeline_defined_from_yaml(self):
         """
-        Runs the iris example pipeline and checks if the output is as expected
+        Runs the iris example lane and checks if the output is as expected
         """
-        yaml_file = 'pysparketl/tests/helpers/res/iris.yaml'  # Relative from project root
+        yaml_file = 'sparklanes/tests/helpers/res/iris.yaml'  # Relative from project root
         out_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../dist/out/')
         expected_out_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/res/iris_expected.json')
 

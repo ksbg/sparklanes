@@ -3,14 +3,14 @@ from importlib import import_module
 
 from schema import Schema, SchemaError, Optional, Or
 
-from pysparketl.etl import errors
-from pysparketl.etl.base import PipelineProcessorBase
+from sparklanes.framework import errors
+# from sparklanes.framework.task_base import PipelineProcessorBase
 
 
 def validate_pipeline_dict_schema(pipeline_dict):
     """
-    Makes sure that the pipeline definition dict has the correct schema
-    :param pipeline_dict: The pipeline definition dict from which the pipeline definition will be created
+    Makes sure that the lane definition dict has the correct schema
+    :param pipeline_dict: The lane definition dict from which the lane definition will be created
     :return: (dict) The validated dict
     """
     extract_format = {'class': str, Optional('kwargs'): Or({str: object}, None)}
@@ -31,7 +31,7 @@ def validate_and_get_class(cls_path, shared=False):
     """
     Checks whether the supplied class meets the requirements:
     - Does the class under the specified path exist?
-    - Is the class a child of etl.base.PipelineProcessorBase? (not checked for shared classes)
+    - Is the class a child of framework.base.PipelineProcessorBase? (not checked for shared classes)
     :param cls_path: (str) full path to the class, relative from the module root
     :param shared: (boolean) indicates whether the class to be checked is a shared object
     :return: (class) The validated class
@@ -52,9 +52,9 @@ def validate_and_get_class(cls_path, shared=False):
 
 
 def validate_processor_parent(cls):
-    """Checks whether the class is a child of etl.base.PipelineProcessorBase"""
+    """Checks whether the class is a child of framework.base.PipelineProcessorBase"""
     if not issubclass(cls, PipelineProcessorBase):
-        raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of etl.PipelineProcessorBase)'
+        raise errors.PipelineInvalidClassError('Class `%s` is not valid (not a child of framework.PipelineProcessorBase)'
                                                % cls.__name__)
 
     return cls
@@ -72,7 +72,7 @@ def validate_class_args(cls, passed_args):
     if passed_args is None:
         passed_args = {}
 
-    # Inspect class arguments
+    # Inspect class arguments  TODO: py2/py3
     super_cls_args = inspect.getargspec(PipelineProcessorBase.__init__)[0]
     arg_spec = inspect.getargspec(cls.__init__)
     args = arg_spec[0]
@@ -93,7 +93,7 @@ def validate_class_args(cls, passed_args):
             if required_arg not in passed_args.keys():
                 raise errors.PipelineInvalidClassArgumentsError(
                     'Required argument `%s` of `%s.__init__` is not present in '
-                    'the pipeline definition' % (required_arg, cls.__name__))
+                    'the lane definition' % (required_arg, cls.__name__))
 
     # Check if non-existing arguments are passed
     for passed_arg in passed_args.keys():

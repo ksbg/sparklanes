@@ -1,7 +1,7 @@
 import os
 
-from pysparketl.etl.base import PipelineProcessorBase
-from pysparketl.etl.shared import Shared
+from sparklanes.framework.task_core import PipelineProcessorBase
+from sparklanes.framework.shared import Shared
 
 import csv
 

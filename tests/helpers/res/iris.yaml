@@ -2,7 +2,7 @@ processors:
   extract:
     class: processors.extract.example.iris.ExtractIrisCSVData           # The extractor class
     kwargs:
-      iris_csv_path: ../pysparketl/tests/helpers/res/iris.csv                              # The path to the iris csv file, relative to the module root
+      iris_csv_path: ../sparklanes/tests/helpers/res/iris.csv                              # The path to the iris csv file, relative to the module root
   transform:
     - class: processors.transform.example.iris.NormalizeColumns         # The first transformer class
       kwargs:

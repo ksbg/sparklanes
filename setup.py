@@ -4,15 +4,14 @@ with open('requirements.txt', 'r') as req:
     requirements = req.read().splitlines()
 
 setup(
-    name='pyspark-etl',
-    version='0.1',
-    url='https://github.com/ksbg/pyspark-etl',
+    name='sparklanes',
+    version='0.2',
+    url='https://github.com/ksbg/sparklanes',
     author='Kevin Baumgarten',
     author_email='kevin@ksbg.io',
     description='A lightweight ETL framework for pyspark (Apache Spark\'s python API)',
-    packages=find_packages(exclude=['pysparketl.tests']),
-    package_data={'pysparketl.submit': ['default_log4j-spark.properties',
-                                         'default_spark.conf']},
+    packages=['sparklanes', 'sparklanes.submit', 'sparklanes.framework'],
+    package_data={'sparklanes.submit': ['default_log4j-spark.properties', 'default_spark.conf']},
     install_requires=requirements,
-    entry_points={'console_scripts': ['etl-submit=pysparketl.submit:submit_to_spark_cmd']}
+    entry_points={'console_scripts': ['lane-submit=sparklanes.submit:submit_to_spark_cli']}
 )

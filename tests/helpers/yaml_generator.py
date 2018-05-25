@@ -11,7 +11,7 @@ import yaml
 
 class ValidPipelineYAMLDefinitions(object):
     """
-    Helper object that acts as an iterator to generate all possible valid pipeline definition schemas. All combinations
+    Helper object that acts as an iterator to generate all possible valid lane definition schemas. All combinations
     of valid configuration options are checked:
         - Each step (extract, transform, load) and each shared resource containing a single process are generated with
           kwargs defined as either:
@@ -26,7 +26,7 @@ class ValidPipelineYAMLDefinitions(object):
           --> 6 possible two-process steps, 4 possible three-process steps
         --> This holds true for processors.extract, processors.transform, processors.load and shared. A combination of all
             is generated, which results in (4+6+4)^4 = 38416 possible combinations that can be tested
-    This class implements an iterator, which, in each iteration, writes the pipeline definition as YAML to a file in the
+    This class implements an iterator, which, in each iteration, writes the lane definition as YAML to a file in the
     OS' temp dir and returns a stream to that file, so it can simply be used as in:
 
     for yaml_file_stream in ValidPipelineYAMLDefinitions():
@@ -35,7 +35,7 @@ class ValidPipelineYAMLDefinitions(object):
     38416 files will be generated over all iterations (and of course also removed) and their file streams returned
     """
 
-    def __init__(self):
+    def __init__(self):  # TODO: only test subset of combinations
         self.__kwarg_defs = {'with_one_kwarg': {'class': 'cls', 'kwargs': {'a': 'b'}},
                              'without_kwargs': {'class': 'cls'},
                              'with_empty_kwargs': {'class': 'cls', 'kwargs': None},

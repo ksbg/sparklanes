@@ -1,12 +1,12 @@
 pyspark-etl
 ===========
 
-pyspark-etl is an [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load) (Extract -> Transform -> Load) framework 
+pyspark-framework is an [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load) (Extract -> Transform -> Load) framework
 for _pyspark_ (Apache Spark's python API). Its goal is to allow you
 to focus on the important tasks - writing data processors - without having to spend much time dealing with things such as
 packaging your code for spark submission, stringing processors together, or designing your application architecture.
 
-At their etl, the data processors you will write are encapsulated and work independently from one another.
+At their framework, the data processors you will write are encapsulated and work independently from one another.
 This means you can define pipelines with an arbitrary processor order, and easily remove, add or swap out processors.
 
 You can define pipelines using _pipeline configuration files_ (or manually, using the framework's API), to then package 
@@ -31,12 +31,12 @@ Usage
 Getting Started
 ---------------
 
-Check out the [example](examples/README.md), which shows how a simple ETL pipeline can be built.
+Check out the [example](examples/README.md), which shows how a simple ETL lane can be built.
 
 Defining a Pipeline
 -------------------
-The simplest way to define pipeline is via _pipeline configuration
-files_, which are schematized YAML files. The layout of a pipeline
+The simplest way to define lane is via _pipeline configuration
+files_, which are schematized YAML files. The layout of a lane
 configuration should look as follows:
 
 ```yaml
@@ -62,13 +62,13 @@ shared:                                           # (list[dict] | dict) (optiona
         kwarg_name: value                         # (*) (optional) Keyword argument and its value                       
 ```
 
-From that file, the pipeline can be created automatically. Each of the
+From that file, the lane can be created automatically. Each of the
 classes will be instantiated using the supplied keyword arguments, after
 which the processors will run in subsequent order. If shared classes are
 specified, they will also be instantiated and made accessible to each processor.
 
-Alternatively, the pipeline can be built and run using the framework's
-API. The same pipeline could be built as follows:
+Alternatively, the lane can be built and run using the framework's
+API. The same lane could be built as follows:
 
 ```python
 import processors
@@ -99,8 +99,8 @@ Writing Custom Processors
 -------------------------
 
 Each processor must inherit from the abstract class
-`etl.base.PipelineProcessorBase` and implement the abstract method
-`run()`, which will be called during pipeline execution. For example:
+`framework.base.PipelineProcessorBase` and implement the abstract method
+`run()`, which will be called during lane execution. For example:
 
 ```python
 from etl.base import PipelineProcessorBase
@@ -123,7 +123,7 @@ sure that it will be packaged when being submitted to spark.
 Sharing Objects between Processors
 ----------------------------------
 As can be seen above, *shared* classes can be specified when defining a
-pipeline. These will be instantiated and their objects made sharable
+lane. These will be instantiated and their objects made sharable
 among processors. Shared classes can be any valid python classes and have no special requirements.
 
 Inside a processor, they can be accessed and manipulated as follows:
@@ -148,7 +148,7 @@ First package the application:
 
     make build
 
-Then submit a pipeline to spark
+Then submit a lane to spark
 
     make submit path/to/pipeline.yaml
 

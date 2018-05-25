@@ -7,11 +7,11 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import rand
 from six import PY3
 
-from pysparketl.etl import errors
-from pysparketl.etl.pipeline import PipelineDefinition, Pipeline
-from pysparketl.etl.shared import Shared
-from pysparketl.tests.helpers import processors
-from pysparketl.tests.helpers.yaml_generator import ValidPipelineYAMLDefinitions
+from sparklanes.framework import errors
+from sparklanes.framework.pipeline import PipelineDefinition, Pipeline
+from sparklanes.framework.shared import Shared
+from .helpers import processors
+from .helpers.yaml_generator import ValidPipelineYAMLDefinitions
 
 
 class TestFromYAMLToPipeline(TestCase):
@@ -24,15 +24,15 @@ class TestFromYAMLToPipeline(TestCase):
 
     def test_integration_from_yaml_to_pipeline(self):
         """
-        Tests an (almost) exhaustive list of possible YAML pipeline definitions. Uses the ValidPipelineYAMLDefinitions
+        Tests an (almost) exhaustive list of possible YAML lane definitions. Uses the ValidPipelineYAMLDefinitions
         helper, which generates combinations of possible definition styles and provides an iterator to create the
         YAML files and passes the open file stream for further processing. Steps:
         1. Read YAML from file into dictionary
-        2. Build the pipeline definition from dictionary
-        3. Build the pipeline from the pipeline definition
-        4. Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
-           contains the same data defined in the pipeline definition.
-        5. Run the pipeline
+        2. Build the lane definition from dictionary
+        3. Build the lane from the lane definition
+        4. Check if the lane definition contains the same data as defined in the YAML file, and if the lane
+           contains the same data defined in the lane definition.
+        5. Run the lane
         """
         valid_definitions = ValidPipelineYAMLDefinitions()
         for yaml_file_stream in valid_definitions:
@@ -45,13 +45,13 @@ class TestFromYAMLToPipeline(TestCase):
                 pd = PipelineDefinition()
                 pd.build_from_dict(pd_dict)
 
-                # Build pipeline from definition
+                # Build lane from definition
                 pipeline = Pipeline(definition=pd, sc=self.sc)
 
                 # Check if built correctly
                 self.__check_definition_and_pipeline(pd_dict=pd_dict, pd=pd, pipeline=pipeline)
 
-                # Run the pipeline
+                # Run the lane
                 pipeline.run()
             except Exception as e:
                 self.fail('\nException raised: %s\nMessage: %s\n\nTested YAML file: `%s`' %
@@ -60,8 +60,8 @@ class TestFromYAMLToPipeline(TestCase):
                 print('Checked %s/%s definitions for integration test' % (self.counter, valid_definitions.iter_len))
 
     def __check_definition_and_pipeline(self, pd_dict, pd, pipeline):
-        """Check if the pipeline definition contains the same data as defined in the YAML file, and if the pipeline
-           contains the same data defined in the pipeline definition. """
+        """Check if the lane definition contains the same data as defined in the YAML file, and if the lane
+           contains the same data defined in the lane definition. """
         for def_type, p_processes in pipeline.processes.items():
             for i in range(len(p_processes)):
                 # Turn single non-list processors into a list (to access it more easily)
@@ -73,11 +73,11 @@ class TestFromYAMLToPipeline(TestCase):
                 # Check if grabbed class and kwargs in definition are the same is in YAML
                 self.assertEqual('%s.%s' % (pd.processes[def_type][i]['class'].__module__,
                                             pd.processes[def_type][i]['class'].__name__),
-                                 'pysparketl.' + dict_processes[i]['class'])
+                                 'sparklanes.' + dict_processes[i]['class'])
                 if 'kwargs' in dict_processes[i].keys() and dict_processes[i]['kwargs']:
                     self.assertEqual(pd.processes[def_type][i]['kwargs'], dict_processes[i]['kwargs'])
 
-                # Check if built pipeline has the same class and kwargs as definition
+                # Check if built lane has the same class and kwargs as definition
                 self.assertEqual(p_processes[i]['class'], pd.processes[def_type][i]['class'])
                 self.assertEqual(p_processes[i]['kwargs'], pd.processes[def_type][i]['kwargs'])
 
@@ -92,7 +92,7 @@ class TestSharedObjectPassingBetweenProcesses(TestCase):
         # Init spark
         self.sc = SparkContext.getOrCreate()
         self.sc.setLogLevel('ERROR')
-        self.ss = SparkSession.Builder().appName('pyspark-etl').getOrCreate()
+        self.ss = SparkSession.Builder().appName('pyspark-framework').getOrCreate()
 
     def test_integration_passing_of_shared_resources(self):
         res_name = 'int_list'
