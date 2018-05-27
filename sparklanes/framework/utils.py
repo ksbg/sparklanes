@@ -1,4 +1,5 @@
 import inspect
+import yaml
 
 from six import string_types, PY2, PY3
 
@@ -61,9 +62,13 @@ def _validate_params(cls, mtd_name, *args, **kwargs):
         if k not in required_params and k not in optional_params:
             raise TaskInitializationError('kwarg `%s` is not a parameter of callable `%s`.' % (k, mtd.__name__))
 
+from schema import Schema, SchemaError, Optional, Or
+
+def _validate_schema(yd):
+    pass
+
 
 def is_regular_method_or_class_method(cls, mtd_name):
-    print(cls, cls.__name__, mtd_name)
     if inspect.isroutine(getattr(cls, mtd_name)):
         bound_mtd = cls.__dict__[mtd_name]
         if isinstance(bound_mtd, classmethod):  # class method?
@@ -74,3 +79,8 @@ def is_regular_method_or_class_method(cls, mtd_name):
             return True
 
     return False
+
+
+
+def load_yaml(path):
+    pass

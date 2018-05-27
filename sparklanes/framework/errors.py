@@ -54,3 +54,6 @@ class TaskInitializationError(Exception):
 
 class TaskBuilderError(Exception):
     pass
+
+class LaneExecutionError(Exception):
+    pass
