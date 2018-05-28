@@ -1,40 +1,43 @@
-import os
-import pickle
 import sys
 from datetime import timedelta
 from functools import WRAPPER_ASSIGNMENTS
 from inspect import isclass
 from threading import Thread, Lock
 from time import time
-
-from six import string_types, PY2, PY3
-from tabulate import tabulate
 from types import MethodType
 
+from six import string_types, PY2, PY3
+
+import utils
 from .errors import CacheError, TaskInitializationError, LaneExecutionError
-from .utils import _validate_params
 from ..spark import get_logger
 
-logger = get_logger('SparklanesTaskBuilder')
+logger = get_logger('sparklanes')  # TODO: better logging
 
 
 class Lane(object):
-    def __init__(self, name='UnnamedLane', run_parallel=False, *args):
+    """Used to build and run data processing lanes (i.e. pipelines)."""
+    def __init__(self, name='UnnamedLane', run_parallel=False):
+        """
+        Parameters
+        ----------
+        name (str): Custom name of the lane
+        run_parallel (bool): Indicates, whether the tasks in a Lane shall be executed in parallel. Does not affect
+                             branches inside the lane (`run_parallel` must be indicated in the branches themselves)
+        """
         if not isinstance(name, string_types):
             raise TypeError('`name` must be a string')
         self.name = name
         self.run_parallel = run_parallel
 
         self.tasks = []
-        if len(args) > 0:
-            for task in args:
-                self.add(task)
 
         self.logger = get_logger(name)
         self.log_lock = Lock()
 
     def __str__(self):
-        task_str = '=' * 50 + '\n'
+        """Generates a readable string using the tasks/branches inside the lane"""
+        task_str = '=' * 80 + '\n'
 
         def generate_str(lane_or_branch, prefix='\t', out=''):
             out += prefix + lane_or_branch.name
@@ -52,35 +55,42 @@ class Lane(object):
 
             return out
 
-        task_str += generate_str(self) + '\n' + '=' * 50
+        task_str += generate_str(self) + '=' * 80
 
         return task_str
 
-    def save_to_file(self, path, overwrite=True):
-        if not overwrite and os.path.exists(path):
-            raise IOError('Path `%s` already exists.' % path)
-
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-
-        logger.info('Successfully dumped Lane to `%s`' % path)
-
-    def load_from_file(self, path):
-        with open(path, 'rb') as f:
-            lane = pickle.load(f)
-
-        logger.info('Successfully loaded Lane from `%s`' % path)
-
-        return lane
-
     def __validate_task(self, cls, entry_mtd_name, args, kwargs):
+        """
+        Checks if a class is a task, i.e. if it has been decorated with `Task`, and if the supplied args/kwargs match
+        the signature of the task's entry method.
+
+        Parameters
+        ----------
+        cls (_LaneTask)
+        entry_mtd_name (str): Name of the method, which is called when the task is run
+        args (List[object])
+        kwargs (Dict{str: object})
+        """
         if not isclass(cls) or not issubclass(cls, _LaneTask):
             raise TypeError('Tried to add non-Task `%s` to a Lane. Are you sure you it\'s a `Task`-decorated class?'
                             % str(cls))
 
-        _validate_params(cls, entry_mtd_name, *args, **kwargs)
+        utils._validate_params(cls, entry_mtd_name, *args, **kwargs)
 
     def add(self, cls_or_branch, *args, **kwargs):
+        """
+        Adds a task or branch to the lane (chainable).
+
+        Parameters
+        ----------
+        cls_or_branch (_LaneTask|Branch)
+        args (List[object])
+        kwargs (Dict{str: object})
+
+        Returns
+        -------
+        self: Returns `self` to allow method chaining
+        """
         if isinstance(cls_or_branch, Branch):
             self.tasks.append(cls_or_branch)  # Add branch with already validated tasks
         else:
@@ -92,7 +102,13 @@ class Lane(object):
         return self
 
     def run(self):
-        self.logger.info('\n' + tabulate((('Executing `%s`' % self.name,),)))
+        """Executes the tasks in the lane in the order in which they have been added, unless `self.run_parallel` is True,
+        then each task is assigned a Thread and executed in parallel (note that task threads are still spawned in the
+        order in which they were added).
+        """
+        logger.info(('\n' + '-' * 80 + '\nExecuting `%s`\n' + '-' * 80) % self.name)
+        logger.info(str(self))
+
         threads = []
 
         if len(self.tasks) == 0:
@@ -116,15 +132,36 @@ class Lane(object):
             for thread in threads:
                 thread.join()
 
-        self.logger.info('\n' + tabulate((('Finished executing `%s`' % self.name,),)))
+        logger.info(('\n' + '-' * 80 + '\nFinished executing `%s`\n' + '-' * 80) % self.name)
 
 
 class Branch(Lane, object):
-    def __init__(self, name='UnnamedBranch', run_parallel=False, *args):
-        super(Branch, self).__init__(name=name, run_parallel=run_parallel, *args)
+    """Used to split task lanes into branches, which is e.g. useful if part of the data processing pipeline should be
+    executed in parallel, while other parts should be run in subsequent order."""
+    def __init__(self, name='UnnamedBranch', run_parallel=False):
+        """
+        Parameters
+        ----------
+        name (str): Custom name of the branch
+        run_parallel (bool): Indicates if the task in the branch shall be executed in parallel
+        args (List[object])
+        """
+        super(Branch, self).__init__(name=name, run_parallel=run_parallel)
 
 
 def Task(entry):
+    """
+    Decorator with which classes, who act as tasks in a `Lane`, must be decorated. When a class is being decorated,
+    it becomes a child of `_LaneTask`.
+
+    Parameters
+    ----------
+    entry: The name of the task's "main" method, i.e. the method which is executed when a task is run
+
+    Returns
+    -------
+    wrapper (function): The actual decorator function
+    """
     if not isinstance(entry, string_types):
         # In the event that no argument is supplied to the decorator, python passes the decorated class itself as an
         # argument. That way, we can detect if no argument (or an argument of invalid type) was supplied.
@@ -174,38 +211,64 @@ def Task(entry):
 
 
 class _LaneTask(object):
+    """The super class of each task, from which all tasks inherit when being decorated with `Task`"""
     def __new__(cls, *args, **kwargs):
+        """Used to make sure the class will not be instantiated on its own. Instances should only exist as parents."""
         if cls is _LaneTask:
             raise TaskInitializationError("Task base `LaneTask` may not be instantiated on its own.")
 
         return object.__new__(cls, *args, **kwargs)
 
     def __call__(self):
-        logger.info('\n' + tabulate((('Executing task `%s`' % (self.__name__ + '.' + self._entry_mtd),),)))
+        """Used to make each task object callable, in order to execute tasks in a consistent fashion. Calls the task's
+        entry method"""
+        task_name = self.__name__ + '.' + self._entry_mtd
+        logger.info(('\n' + '-' * 80 + '\nExecuting task `%s`\n' + '-' * 80) % task_name)
         start = time()
         res = getattr(self, self._entry_mtd)()
         passed = str(timedelta(seconds=(time() - start)))
-        logger.info('\n' + tabulate((('Finished executing task `%s`. Execution time: %s'
-                                      % (self.__name__ + '.' + self._entry_mtd, passed),),)))
+        logger.info(('\n' + '-' * 80 + '\nFinished executing task `%s`. Execution time: %s\n' + '-' * 80)
+                    % (task_name, passed))
 
         return res
 
     def cache(self, name, val, overwrite=True):
+        """
+        Assigns an attribute reference to all subsequent tasks. For example, if a task caches a dataframe `df` using
+        `self.cache('some_df', df)`, all tasks that follow can access the dataframe using `self.some_df`. Note that
+        manually assigned attributes that share the same name have precedence over cached attributes.
+
+        Parameters
+        ----------
+        name (str): Name of the attribute
+        val (object): Attribute value
+        overwrite (bool): Indicates if the attribute shall be overwritten, or not (if `False`, and a cached attribute
+                          with the given name already exists, `sparklanes.errors.CacheError` will be thrown.
+        """
         if name in _TaskCache.cached and not overwrite:
             raise CacheError('Object with name `%s` already in cache.' % name)
         _TaskCache.cached[name] = val
 
     def uncache(self, name):
+        """
+        Removes an attribute from the cache, i.e. it will be deleted and becomes unavailable for all tasks that follow.
+
+        Parameters
+        ----------
+        name (str): Name of the cached attribute, which shall be deleted
+        """
         try:
             del _TaskCache.cached[name]
         except KeyError:
             raise CacheError('Attribute `%s` not found in cache.' % name)
 
-    def uncache_all(self):
+    def clear_cache(self):
+        """Clears the entire cache"""
         _TaskCache.cached = {}
 
 
 class _LaneTaskThread(Thread):
+    """Used to spawn tasks as threads to be run in parallel."""
     def __init__(self, task):
         Thread.__init__(self)
         self.task = task
@@ -213,14 +276,18 @@ class _LaneTaskThread(Thread):
         self.daemon = True
 
     def run(self):
+        """Overwrites `threading.Thread.run`, to allow handling of exceptions thrown by threads from within the
+        main app."""
         self.exc = None
         try:
             self.task()
         except BaseException:
             self.exc = sys.exc_info()
 
-    def join(self):
-        Thread.join(self)
+    def join(self, timeout=None):
+        """Overwrites `threading.Thread.join`, to allow handling of exceptions thrown by threads from within the
+        main app."""
+        Thread.join(self, timeout=timeout)
         if self.exc:
             msg = "Thread '%s' threw an exception `%s`: %s" % (self.getName(), self.exc[0].__name__, self.exc[1])
             new_exc = LaneExecutionError(msg)
@@ -231,10 +298,29 @@ class _LaneTaskThread(Thread):
 
 
 class _TaskCache(object):
+    """Serves as the attribute cache of tasks, which is accessed using the tasks' `__getattr__` method."""
     cached = {}
+
+    def __new__(cls, *args, **kwargs):
+        """Used to make sure that _TaskCache will not be instantiated."""
+        if cls is _TaskCache:
+            raise CacheError("`_TaskCache` may not be instantiated and only provides static access.")
+
+        return object.__new__(cls, *args, **kwargs)
 
     @staticmethod
     def get(name):
+        """
+        Retrieves an object from the cache.
+
+        Parameters
+        ----------
+        name (str): Name of the object to be retrieved
+
+        Returns
+        -------
+        object
+        """
         try:
             return _TaskCache.cached[name]
         except KeyError:

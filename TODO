@@ -1,9 +1,8 @@
-logging: make it possible for users to config the logger of sparklane's internals (set log level and other config options)
-tests
-validation
-rewrite readme
-recreate example
-docstrings & generate sphinx docs
-CI
-make it possible for users to overwrite sparklane task internal methods (with documentaiton on how to)
-make it possible to add extra sparklane config options (e.g. verbose task execution etc, unpersist tasks)
+- Better user-configurable logging
+- CI
+- Rewrite tests
+- README
+- Example notebook
+- Docs
+- Allow users to overwrite sparklane internal methods
+- Allow users to add extra sparklane config options (e.g. verbosity, unpersisting of already executed tasks, etc.)

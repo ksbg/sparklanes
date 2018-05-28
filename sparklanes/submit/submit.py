@@ -6,39 +6,27 @@ import shutil
 import tempfile
 from subprocess import call
 
-REQUIREMENTS = ['PyYAML==3.12', 'schema==0.6.7', 'tabulate==0.8.2', 'six==1.11.0']
-# TODO: make cwd curdir
+REQUIREMENTS = ['py4j==0.10.6', 'PyYAML==3.12', 'schema==0.6.7', 'tabulate==0.8.2', 'six==1.11.0']
 
 
-def submit_to_spark(pipeline, package, extra_data=None, spark_args=None):  # TODO needs more work (>lane)
-    if extra_data and not isinstance(extra_data, list):
-        raise ValueError('`extra_data` must be of type `list`.')
-    if spark_args and not isinstance(spark_args, dict):
-        raise ValueError('`spark_args` must be of tyope `dict`.')
-
-    dist = __make_tmp_dir()
-    try:
-        libs_dir = __install_libs(dist)
-        __package(package, dist, libs_dir, extra_data)
-        __submit(pipeline, dist, spark_args)
-    except Exception as e:
-        __clean_up(dist)
-        raise e
-    __clean_up(dist)
-
-
-def submit_to_spark_cli():
+def _submit_to_spark():
     args = __parse_and_validate_args()
     if args['spark_args']:
-        args['spark_args'] = __prep_spark_args_cli(args['spark_args'])
+        args['spark_args'] = __prep_spark_args(spark_args=args['spark_args'])
 
     logging.debug(args)
 
     dist = __make_tmp_dir()
     try:
-        libs_dir = __install_libs(dist)
-        __package(args['package'], dist, libs_dir, args['extra_data'])
-        __submit(args['lane'], dist, args['spark_args'])
+        libs_dir = __install_libs(dist_dir=dist)
+        __package(tasks_pkg=args['package'],
+                  dist_dir=dist,
+                  libs_dir=libs_dir,
+                  custom_main=args['main'],
+                  extra_data=args['extra_data'])
+
+        __submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'])
+
     except Exception as e:
         __clean_up(dist)
         raise e
@@ -46,14 +34,6 @@ def submit_to_spark_cli():
 
 
 def __prep_spark_args(spark_args):
-    subcmd = []
-    for k, v in spark_args:
-        subcmd += ['--%s' % k, v]
-
-    return subcmd
-
-
-def __prep_spark_args_cli(spark_args):
     subcmd = []
     for sa in spark_args:
         sas = sa.split('=')
@@ -65,10 +45,15 @@ def __prep_spark_args_cli(spark_args):
 
 def __parse_and_validate_args():
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
-    parser.add_argument('lane', type=str,
-                        help='Path to the yaml lane definition file.')
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument('-y', '--yaml', type=str,
+                       help='Path to the yaml definition file.')
+    group.add_argument('-m', '--main', type=str,
+                       help='Path to the main python file')
+
     parser.add_argument('-p', '--package', type=str, required=True,
-                        help='Path to the python package containing your processors.')
+                        help='Path to the python package containing your tasks.')
     parser.add_argument('-e', '--extra-data', nargs='*', required=False,
                         help='Path to any additional files or directories that should be packaged and sent to Spark.')
     parser.add_argument('-s', '--spark-args', nargs='*', required=False,
@@ -89,10 +74,16 @@ def __parse_and_validate_args():
         raise ValueError('Could not confirm `%s` is a python package. Make sure it contains an `__init__.py`.')
 
     # Validate lane
-    if args['lane']:  # Fix file path
-        args['lane'] = fix_path(args['lane'])
-        if not os.path.isfile(args['lane']):
-            raise ValueError('File `%s` does not seem to exist' % args['lane'])
+    if args['yaml']:  # Fix file path
+        args['yaml'] = fix_path(args['yaml'])
+        if not os.path.isfile(args['yaml']):
+            raise ValueError('YAML file `%s` does not exist' % args['yaml'])
+
+    # Validate main
+    if args['main']:
+        args['main'] = fix_path(args['main'])
+        if not os.path.isfile(args['main']):
+            raise ValueError('Python file `%s` does not exist' % args['main'])
 
     # Validate optional additional data
     if args['extra_data']:
@@ -106,7 +97,7 @@ def __parse_and_validate_args():
         pattern = re.compile('[\w\-_]+=.+')
         for sa in args['spark_args']:
             if not pattern.match(sa):
-                raise ValueError('Spark argument `%s` does not seem to be in the correct format (ARG_NAME=ARG_VAL).')
+                raise ValueError('Spark argument `%s` does not seem to be in the correct format `ARG_NAME=ARG_VAL`.')
 
     return args
 
@@ -131,22 +122,30 @@ def __install_libs(dist_dir):
     return libs_dir
 
 
-def __package(procs_pkg, dist_dir, libs_dir, extra_data=None):
+def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
     logging.info('Packaging application')
     # Package libs
     shutil.make_archive(os.path.join(dist_dir, 'libs'), 'zip', libs_dir, './')
 
-    # Package processors
-    procs_dir_splits = os.path.split(os.path.realpath(procs_pkg))
-    print(procs_dir_splits)
-    shutil.make_archive(os.path.join(dist_dir, 'procs'),
+    # Package tasks
+    tasks_dir_splits = os.path.split(os.path.realpath(tasks_pkg))
+    print(tasks_dir_splits)
+    shutil.make_archive(os.path.join(dist_dir, 'tasks'),
                         'zip',
-                        procs_dir_splits[0],
-                        procs_dir_splits[1])
+                        tasks_dir_splits[0],
+                        tasks_dir_splits[1])
 
     # Package main.py
-    shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'main.py'),
-                os.path.join(dist_dir, 'main.py'))
+    if custom_main is None:
+        from . import _main
+        main_path = _main.__file__
+        if main_path[-3:] == 'pyc':
+            main_path = main_path[:-1]
+        shutil.copy(os.path.realpath(main_path),
+                    os.path.join(dist_dir, 'main.py'))
+    else:
+        shutil.copy(os.path.realpath(custom_main),
+                    os.path.join(dist_dir, 'main.py'))
 
     # Package framework
     shutil.make_archive(os.path.join(dist_dir, 'framework'),
@@ -167,7 +166,7 @@ def __package(procs_pkg, dist_dir, libs_dir, extra_data=None):
                 raise IOError('File `%s` not found at `%s`.' % (d, real_path))
 
 
-def __submit(pipeline_yaml, dist_dir, spark_args):
+def __submit(lane_yaml, dist_dir, spark_args):
     cmd = ['spark-submit']
 
     # Supplied spark arguments
@@ -175,8 +174,9 @@ def __submit(pipeline_yaml, dist_dir, spark_args):
         cmd += spark_args
 
     # Packaged App & lane
-    cmd += ['--py-files', 'libs.zip,framework.zip,procs.zip', 'main.py']
-    cmd += ['--lane', pipeline_yaml]
+    cmd += ['--py-files', 'libs.zip,framework.zip,tasks.zip', 'main.py']
+    if lane_yaml:
+        cmd += ['--lane', lane_yaml]
 
     logging.info('Submitting to Spark')
     logging.debug(str(cmd))
