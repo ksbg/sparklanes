@@ -12,7 +12,7 @@ setup(
     description='A lightweight framework to build and execute data processing pipelines in pyspark '
                 '(Apache Spark\'s python API)',
     packages=['sparklanes', 'sparklanes.submit', 'sparklanes.framework'],
-    package_data={'sparklanes.submit': ['default_log4j-spark.properties', 'default_spark.conf']},
     install_requires=requirements,
+    package_data={'sparklanes.submit': ['requirements-submit.txt']},
     entry_points={'console_scripts': ['lane-submit=sparklanes.submit.submit:_submit_to_spark']}
 )
