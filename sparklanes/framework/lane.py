@@ -10,13 +10,11 @@ from six import string_types, PY2, PY3
 
 import utils
 from .errors import CacheError, TaskInitializationError, LaneExecutionError
-from ..spark import get_logger
-
-logger = get_logger('sparklanes')  # TODO: better logging
 
 
 class Lane(object):
     """Used to build and run data processing lanes (i.e. pipelines)."""
+
     def __init__(self, name='UnnamedLane', run_parallel=False):
         """
         Parameters
@@ -32,8 +30,7 @@ class Lane(object):
 
         self.tasks = []
 
-        self.logger = get_logger(name)
-        self.log_lock = Lock()
+        self._log_lock = Lock()
 
     def __str__(self):
         """Generates a readable string using the tasks/branches inside the lane"""
@@ -106,8 +103,9 @@ class Lane(object):
         then each task is assigned a Thread and executed in parallel (note that task threads are still spawned in the
         order in which they were added).
         """
+        logger = utils.make_logger('sparklanes')
         logger.info(('\n' + '-' * 80 + '\nExecuting `%s`\n' + '-' * 80) % self.name)
-        logger.info(str(self))
+        logger.info('\n' + str(self))
 
         threads = []
 
@@ -138,6 +136,7 @@ class Lane(object):
 class Branch(Lane, object):
     """Used to split task lanes into branches, which is e.g. useful if part of the data processing pipeline should be
     executed in parallel, while other parts should be run in subsequent order."""
+
     def __init__(self, name='UnnamedBranch', run_parallel=False):
         """
         Parameters
@@ -188,13 +187,14 @@ def Task(entry):
                     setattr(cls, '__init__', init)
 
                 # Check for attributes that will be overwritten
-                reserved_attributes = ('__getattr__', '__call__', '_entry_mtd', 'cache', 'uncache', 'uncache_all')
+                reserved_attributes = ('__getattr__', '__call__', '_entry_mtd', 'cache', 'uncache', 'clear_cache')
                 for attr in dir(cls):
                     if attr in reserved_attributes:
-                        logger.warning('Attribute `%s` of class `%s` will be overwritten when decorated with `Task`! A '
-                                       'number of method names are reserved for sparklane\'s internals. Avoid '
-                                       'assigning any of the following attributes `%s`'
-                                       % (attr, cls.__name__, str(reserved_attributes)))
+                        utils.make_logger('sparklanes').warning(
+                            'Attribute `%s` of class `%s` will be overwritten when decorated with `Task`! A number of '
+                            'method names are reserved for sparklane\'s internals. Avoid assigning any of the following '
+                            'attributes `%s`' % (attr, cls.__name__, str(reserved_attributes))
+                        )
 
                 assignments = {'_entry_mtd': entry,
                                '__getattr__': lambda self, name: _TaskCache.get(name),
@@ -212,6 +212,7 @@ def Task(entry):
 
 class _LaneTask(object):
     """The super class of each task, from which all tasks inherit when being decorated with `Task`"""
+
     def __new__(cls, *args, **kwargs):
         """Used to make sure the class will not be instantiated on its own. Instances should only exist as parents."""
         if cls is _LaneTask:
@@ -222,6 +223,8 @@ class _LaneTask(object):
     def __call__(self):
         """Used to make each task object callable, in order to execute tasks in a consistent fashion. Calls the task's
         entry method"""
+        logger = utils.make_logger('sparklanes')
+
         task_name = self.__name__ + '.' + self._entry_mtd
         logger.info(('\n' + '-' * 80 + '\nExecuting task `%s`\n' + '-' * 80) % task_name)
         start = time()
@@ -269,6 +272,7 @@ class _LaneTask(object):
 
 class _LaneTaskThread(Thread):
     """Used to spawn tasks as threads to be run in parallel."""
+
     def __init__(self, task):
         Thread.__init__(self)
         self.task = task

@@ -1,0 +1,12 @@
+lane:
+  name: TooManyParams
+  run_parallel: false
+  tasks:
+  - class: tasks.ValidOptParams
+  - class: tasks.ValidReqParams
+    args: [1, 2, 3]
+    kwargs:
+      c: 3
+      d: 5
+  - class: tasks.ValidReqOptParams
+

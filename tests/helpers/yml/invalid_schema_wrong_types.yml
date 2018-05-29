@@ -1,0 +1,9 @@
+lane:
+  name: ValidSimple
+  run_parallel: false
+  tasks:
+    - class: tasks.ValidReqParams
+      args:
+        a: 1
+      kwargs:
+        c: 2

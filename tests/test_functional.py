@@ -1,79 +1,137 @@
-import os
-import subprocess
-import tempfile
-import warnings
-from filecmp import cmp
+"""Executes the 'iris' example lane, and checks if the resulting files match what's expected"""
 from unittest import TestCase
+from tempfile import mkdtemp
+import os
+import sys
+import subprocess
+from shutil import rmtree
+from filecmp import cmp
+from helpers.tasks import iris_tasks
+from sparklanes import Lane
+from sparklanes.framework.utils import make_logger
+import logging
 
-from six import PY3
 
-from sparklanes.framework.pipeline import PipelineDefinition, Pipeline
-from .helpers import processors
+class TestIrisLane(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(TestIrisLane, cls).setUpClass()
+        cls.tmp_dir1 = mkdtemp()  # Used for test_from_code
+        cls.tmp_dir2 = mkdtemp()  # Used for test_from_command_line
+        cls.tmp_dir3 = mkdtemp()  # Used for test_from_command_line_with_custom_main
 
+        cls.mdl_dir = os.path.dirname(os.path.abspath(__file__))
+        cls.iris_input = os.path.join(cls.mdl_dir, 'helpers', 'data', 'iris_input.csv')
+        cls.expected_output = os.path.join(cls.mdl_dir, 'helpers', 'data', 'iris_expected_output.json')
 
-class TestFunctionalExtractTransformLoadCSV(TestCase):
-    def setUp(self):
-        if PY3:
-            warnings.simplefilter('ignore', ResourceWarning)
+        # Add tasks to path
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers', 'tasks'))
 
-    def test_csv_example_pipeline_defined_manually(self):
-        """
-        Checks the behavior of the entire lane. The following lane as defined in helpers/func_pl.yaml will be used:
-        Extract: Load a csv file from disk as a spark dataframe
-        Transform: Convert the data frame to a list
-        Transform: Multiply all numbers in the list by two
-        Load: Dump the results to a new csv file
-        """
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        input_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data.csv')
-        _, output_csv = tempfile.mkstemp()
-        output_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_out.csv')
-        expected_csv = os.path.join(cur_dir, 'helpers/res/func_pl_data_expected.csv')
-
-        pd = PipelineDefinition()
-        pd.add_extractor(cls=processors.ProcessorExtractIntsFromCSV,
-                         kwargs={'csv_path': input_csv})
-        pd.add_transformer(processors.ProcessorTransformConvertDataFrameToList,
-                           kwargs={'output_shared_list_name': 'ints_df_as_list'})
-        pd.add_transformer(processors.ProcessorTransformMultiplyIntsInSharedListByTwo,
-                           kwargs={'list_name': 'ints_df_as_list'})
-        pd.add_loader(processors.ProcessorLoadDumpResultListToCSV,
-                      kwargs={'list_name': 'ints_df_as_list', 'output_file_name': 'res/func_pl_data_out.csv'})
-        pipeline = Pipeline(definition=pd)
-        pipeline.run()
-
-        # Test
-        self.assertEqual(cmp(output_csv, expected_csv), True)
-
-        # Clean up
-        try:
-            os.remove(output_csv)
-        except OSError:
-            pass
-
-    def test_iris_example_pipeline_defined_from_yaml(self):
-        """
-        Runs the iris example lane and checks if the output is as expected
-        """
-        yaml_file = 'sparklanes/tests/helpers/res/iris.yaml'  # Relative from project root
-        out_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../dist/out/')
-        expected_out_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers/res/iris_expected.json')
-
+        # Install sparklanes package to make sure the command line script is available
         with open(os.devnull, 'wb') as devnull:
-            subprocess.check_call(['make', 'build', 'submit', yaml_file],
+            subprocess.call([sys.executable, "-m", "pip", "install", os.path.join(cls.mdl_dir, '..')],
+                            stderr=subprocess.STDOUT,
+                            stdout=devnull)
+
+        # Decrease logging verbosity
+        logger = make_logger('sparklanes')
+        logger.handlers[0].setLevel(logging.CRITICAL)
+
+    def __find_iris_output_json(self, out_dir):
+        out_file = None
+        for f in os.listdir(out_dir):
+            if f[-5:] == '.json':
+                out_file = os.path.join(out_dir, f)
+                break
+        if not out_file:
+            print(out_dir)
+            self.fail('Could not find the iris lane\'s output file')
+
+        return out_file
+
+    def test_from_code(self):
+        out_dir = os.path.join(self.tmp_dir1, 'out')
+
+        lane = (Lane(name='IrisExamplePane')
+                .add(iris_tasks.ExtractIrisCSVData, iris_csv_path=self.iris_input)
+                .add(iris_tasks.AddRowIndex)
+                .add(iris_tasks.NormalizeColumns)
+                .add(iris_tasks.SaveAsJSON, out_dir))
+        lane.run()
+
+        out_file = self.__find_iris_output_json(out_dir)
+
+        self.assertEqual(cmp(self.expected_output, out_file), True)
+
+    def __prepare_iris_tmp_dir(self, tmp_dir):
+        # Insert the location of the temporary folder into the YAML file
+        new_yml_path = os.path.join(tmp_dir, 'iris.yml')
+        out_dir = os.path.join(tmp_dir, 'out')
+        package_dir = os.path.join(self.mdl_dir, 'helpers', 'tasks')
+        data_dir = os.path.join(self.mdl_dir, 'helpers', 'data')
+
+        with open(os.path.join(self.mdl_dir, 'helpers', 'yml', 'iris.yml'), 'r') as iris_yml_stream:
+            with open(new_yml_path, 'w') as new_yml_stream:
+                new_yml_stream.write(iris_yml_stream.read() % (self.iris_input, out_dir))
+
+        return new_yml_path, package_dir, data_dir, out_dir
+
+    def test_from_command_line(self):
+        new_yml_path, package_dir, data_dir, out_dir = self.__prepare_iris_tmp_dir(self.tmp_dir2)
+
+        # Execute command
+        with open(os.devnull, 'wb') as devnull:
+            subprocess.check_call(['lane-submit',
+                                   '--yaml', new_yml_path,
+                                   '--package', package_dir,
+                                   '--extra-data', data_dir],
                                   stdout=devnull,
                                   stderr=subprocess.STDOUT)
 
-        out_files = os.listdir(out_path)
-        out_file = None
-        for o_f in out_files:
-            if o_f[-4:] == 'json':
-                out_file = o_f
-                break
+        # Find output file
+        out_file = self.__find_iris_output_json(out_dir)
 
-        # Check if file has been found
-        if out_file is None:
-            self.fail('Iris output JSON file was not found.')
+        self.assertEqual(cmp(self.expected_output, out_file), True)
 
-        # Check if file looks as expected
-        self.assertEqual(cmp(os.path.join(out_path, out_file), expected_out_file), True)
+    def test_from_command_line_with_custom_main(self):
+        custom_main = ["from argparse import ArgumentParser",
+                       "from sparklanes import build_lane_from_yaml",
+                       "",
+                       "parser = ArgumentParser()",
+                       "parser.add_argument('-l', '--lane', required=True)",
+                       "lane = parser.parse_args().__dict__['lane']",
+                       "build_lane_from_yaml(lane).run()"]
+
+        main_path = os.path.join(self.tmp_dir3, 'custom_main.py')
+        new_yml_path, package_dir, data_dir, out_dir = self.__prepare_iris_tmp_dir(self.tmp_dir3)
+
+        with open(main_path, 'w') as main_file_stream:
+            main_file_stream.write('\n'.join(custom_main))
+
+        with open(os.path.join(self.mdl_dir, 'helpers', 'yml', 'iris.yml'), 'r') as iris_yml_stream:
+            with open(new_yml_path, 'w') as new_yml_stream:
+                new_yml_stream.write(iris_yml_stream.read() % (self.iris_input, out_dir))
+
+        # Execute command
+        with open(os.devnull, 'wb') as devnull:
+            subprocess.check_call(['lane-submit',
+                                   '-y', new_yml_path,
+                                   '-p', package_dir,
+                                   '-e', data_dir,
+                                   '-m', main_path],
+                                  stdout=devnull,
+                                  stderr=subprocess.STDOUT)
+
+        out_file = self.__find_iris_output_json(out_dir)
+
+        self.assertEqual(cmp(self.expected_output, out_file), True)
+
+    @classmethod
+    def tearDownClass(cls):
+        rmtree(cls.tmp_dir1)
+        rmtree(cls.tmp_dir2)
+        rmtree(cls.tmp_dir3)
+
+        # Set logging verbosity back
+        logger = make_logger('sparklanes')
+        logger.handlers[0].setLevel(logging.INFO)

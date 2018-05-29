@@ -6,8 +6,6 @@ import shutil
 import tempfile
 from subprocess import call
 
-REQUIREMENTS = ['py4j==0.10.6', 'PyYAML==3.12', 'schema==0.6.7', 'tabulate==0.8.2', 'six==1.11.0']
-
 
 def _submit_to_spark():
     args = __parse_and_validate_args()
@@ -18,7 +16,7 @@ def _submit_to_spark():
 
     dist = __make_tmp_dir()
     try:
-        libs_dir = __install_libs(dist_dir=dist)
+        libs_dir = __install_libs(dist_dir=dist, additional_reqs=args['requirements'])
         __package(tasks_pkg=args['package'],
                   dist_dir=dist,
                   libs_dir=libs_dir,
@@ -45,13 +43,10 @@ def __prep_spark_args(spark_args):
 
 def __parse_and_validate_args():
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
-    group = parser.add_mutually_exclusive_group(required=True)
-
-    group.add_argument('-y', '--yaml', type=str,
-                       help='Path to the yaml definition file.')
-    group.add_argument('-m', '--main', type=str,
-                       help='Path to the main python file')
-
+    parser.add_argument('-y', '--yaml', type=str, required=True,
+                        help='Path to the yaml definition file.')
+    parser.add_argument('-m', '--main', type=str, required=False,
+                        help='Path to a custom main python file')
     parser.add_argument('-p', '--package', type=str, required=True,
                         help='Path to the python package containing your tasks.')
     parser.add_argument('-e', '--extra-data', nargs='*', required=False,
@@ -59,38 +54,31 @@ def __parse_and_validate_args():
     parser.add_argument('-s', '--spark-args', nargs='*', required=False,
                         help='Any additional arguments that should be sent to Spark via spark-submit.'
                              'e.g. `--spark-args executor-memory=20G total-executor-cores=100`')
-
+    parser.add_argument('-r', '--requirements', type=str, required=False,
+                        help='Path to a `requirements.txt` specifying any additional dependencies of your tasks.')
     args = parser.parse_args().__dict__
 
-    def fix_path(p):
-        return os.path.join(os.path.abspath(os.curdir), p) if not os.path.isabs(p) else p
+    def validate_path(p, check_file=True, check_dir=False):
+        if not p:
+            return p
+        else:
+            abs_path = os.path.join(os.path.abspath(os.curdir), p) if not os.path.isabs(p) else p
+            if not (os.path.isfile(abs_path) if check_file else False) \
+                    and not (os.path.isdir(abs_path) if check_dir else False):
+                raise ValueError('`%s` does not exist' % p)
 
-    # Validate package
-    args['package'] = fix_path(args['package'])
-    if not os.path.isdir(args['package']):
-        raise ValueError('`%s` is not a directory.' % args['package'])
+        return abs_path
+
+    # Check/fix files/dirs
+    args['package'] = validate_path(args['package'], False, True)
+    for p in ('yaml', 'requirements', 'main'):
+        args[p] = validate_path(args[p])
+    if args['extra_data']:
+        for i in range(len(args['extra_data'])):
+            args['extra_data'][i] = validate_path(args['extra_data'][i], True, True)
     if not os.path.isfile(os.path.join(args['package'], '__init__.py')):
         # Even though __init__.py is not required anymore in Python 3.3+, for now it is considered needed
         raise ValueError('Could not confirm `%s` is a python package. Make sure it contains an `__init__.py`.')
-
-    # Validate lane
-    if args['yaml']:  # Fix file path
-        args['yaml'] = fix_path(args['yaml'])
-        if not os.path.isfile(args['yaml']):
-            raise ValueError('YAML file `%s` does not exist' % args['yaml'])
-
-    # Validate main
-    if args['main']:
-        args['main'] = fix_path(args['main'])
-        if not os.path.isfile(args['main']):
-            raise ValueError('Python file `%s` does not exist' % args['main'])
-
-    # Validate optional additional data
-    if args['extra_data']:
-        for i in range(len(args['extra_data'])):
-            args['extra_data'][i] = fix_path(args['extra_data'][i])
-            if not os.path.isfile(args['extra_data'][i]) and not os.path.isdir(args['extra_data'][i]):
-                raise ValueError('`%s` is neither a directory, nor a file.' % args['extra_data'][i])
 
     # Check spark args
     if args['spark_args']:
@@ -109,12 +97,24 @@ def __make_tmp_dir():
     return tmp_dir
 
 
-def __install_libs(dist_dir):
+def __install_libs(dist_dir, additional_reqs):
     logging.info('Installing dependencies')
     libs_dir = os.path.join(dist_dir, 'libs')
     if not os.path.isdir(libs_dir):
         os.mkdir(libs_dir)
-    for p in REQUIREMENTS:
+
+    # Get requirements
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'requirements-submit.txt'), 'r') as req:
+        requirements = req.read().splitlines()
+    if additional_reqs:
+        with open(additional_reqs, 'r') as req:
+            for row in req:
+                requirements.append(row)
+
+    # Remove duplicates
+    requirements = list(set(requirements))
+
+    for p in requirements:
         cmd = ['pip', 'install', p, '-t', libs_dir]
         logging.debug('Calling `%s`' % str(cmd))
         call(cmd)
@@ -129,7 +129,6 @@ def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
 
     # Package tasks
     tasks_dir_splits = os.path.split(os.path.realpath(tasks_pkg))
-    print(tasks_dir_splits)
     shutil.make_archive(os.path.join(dist_dir, 'tasks'),
                         'zip',
                         tasks_dir_splits[0],

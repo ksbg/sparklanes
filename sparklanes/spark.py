@@ -1,6 +1,3 @@
-import logging
-import os
-import sys
 from time import time
 
 from pyspark import SparkContext
@@ -8,22 +5,6 @@ from pyspark.sql import SparkSession
 
 spark_context = SparkContext.getOrCreate()
 spark_session = SparkSession.Builder().appName('sparklanes_%d' % int(time())).getOrCreate()  # TODO: proper name
-
-
-def get_logger(name, level=logging.INFO, fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s'):
-    # TODO: better logging
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    if logger.handlers:
-        logger.warning('Logger `%s` already exists!' % name)
-    else:
-        ch = logging.StreamHandler(sys.stderr)
-        ch.setLevel(level)
-        formatter = logging.Formatter(fmt)
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
-
-    return logger
 
 
 def set_spark_context(new_sc):

@@ -1,0 +1,11 @@
+lane:
+  name: ValidSimple
+  run_parallel: false
+  tasks:
+    - class: tasks.NonexistingClass
+      args: [1, 2]
+      kwargs:
+        c: 3
+    - class: tasks.ValidTask1
+    - class: tasks.ValidTask2
+    - class: tasks.ValidTask3

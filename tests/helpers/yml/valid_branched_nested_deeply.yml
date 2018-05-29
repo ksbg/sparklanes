@@ -1,0 +1,30 @@
+lane:
+  name: ValidBranchedNestedDeeply
+  run_parallel: false
+  tasks:
+    - class: tasks.ValidTask1
+    - class: tasks.ValidTask2
+    - branch:
+        name: ValidBranch
+        run_parallel: false
+        tasks:
+          - class: tasks.ValidBranchTask1
+          - class: tasks.ValidBranchTask2
+          - branch:
+              name: ValidSubBranch
+              run_parallel: false
+              tasks:
+                - class: tasks.ValidBranchTask2Subtask1
+                - branch:
+                    name: ValidSubSubBranch
+                    tasks:
+                      - class: tasks.ValidTask1
+                      - branch:
+                          name: ValidSubSubSubBranch
+                          tasks:
+                            - class: tasks.ValidTask2
+                            - class: tasks.ValidTask2
+                      - class: tasks.ValidTask3
+                - class: tasks.ValidBranchTask2Subtask2
+          - class: tasks.ValidBranchTask3
+    - class: tasks.ValidTask3

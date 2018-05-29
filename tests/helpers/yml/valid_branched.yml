@@ -1,0 +1,14 @@
+lane:
+  name: ValidBranched
+  run_parallel: false
+  tasks:
+    - class: tasks.ValidTask1
+    - class: tasks.ValidTask2
+    - branch:
+        name: ValidBranch
+        run_parallel: false
+        tasks:
+          - class: tasks.ValidBranchTask1
+          - class: tasks.ValidBranchTask2
+          - class: tasks.ValidBranchTask3
+    - class: tasks.ValidTask3

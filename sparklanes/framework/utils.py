@@ -1,12 +1,14 @@
 import inspect
+import logging
+import sys
 from importlib import import_module
 
 import yaml
 from schema import Schema, SchemaError, Optional, Or
-from six import string_types, PY2, PY3
+from six import PY2, PY3
 
-from .errors import TaskInitializationError, LaneSchemaError, LaneImportError
 import lane
+from .errors import TaskInitializationError, LaneSchemaError, LaneImportError
 
 
 def _arg_spec(cls, mtd_name):
@@ -65,29 +67,36 @@ def _validate_params(cls, mtd_name, *args, **kwargs):
     """
     mtd = getattr(cls, mtd_name)
 
-    if (PY2 and not inspect.ismethod(mtd)) or (PY3 and not inspect.isfunction(mtd)):
+    if ((PY2 and not inspect.ismethod(mtd)) or (PY3 and not inspect.isfunction(mtd))) \
+            and not isinstance(cls.__dict__[mtd_name], staticmethod):
         raise TypeError('Attribute `%s` of class `%s` must be a method. Got type `%s` instead.'
                         % (mtd_name, cls.__name__, type(mtd)))
 
     required_params, optional_params = _arg_spec(cls, mtd_name)
     n_params = len(required_params) + len(optional_params)
+    n_req_params = len(required_params)
     n_args_kwargs = len(args) + len(kwargs)
-    if n_args_kwargs < n_params:
+
+    for k in kwargs.keys():
+        if k not in required_params and k not in optional_params:
+            raise TaskInitializationError('kwarg `%s` is not a parameter of callable `%s`.' % (k, mtd.__name__))
+
+    if n_args_kwargs < n_req_params:
         raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. Required args: %s'
                                       % (mtd.__name__, ' '.join(required_params)))
-    if n_args_kwargs > n_params:
+    if len(args) > n_params or n_args_kwargs > n_params or len(kwargs) > n_params:
         raise TaskInitializationError('Too many args/kwargs supplied for callable `%s`. Required args: %s'
                                       % (mtd.__name__, ' '.join(required_params)))
-    redundant_p = [p for p in kwargs.keys() if p not in required_params + optional_params]
+
+    redundant_p = [p for p in kwargs.keys() if p not in required_params[len(args):] + optional_params]
     if len(redundant_p) > 0:
         raise TaskInitializationError('Supplied one or more kwargs that in the signature of callable `%s`. Redundant '
                                       'kwargs: %s' % (mtd.__name__, ' '.join(redundant_p)))
 
-    for k in kwargs.keys():
-        if not isinstance(k, string_types):
-            raise TypeError('kwarg keys must be strings. Got type `%s` instead.' % type(k))
-        if k not in required_params and k not in optional_params:
-            raise TaskInitializationError('kwarg `%s` is not a parameter of callable `%s`.' % (k, mtd.__name__))
+    needed_kwargs = required_params[len(args):]
+    if not all([True if p in kwargs.keys() else False for p in needed_kwargs]):
+        raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. Required args: %s'
+                                       % (mtd.__name__, ' '.join(required_params)))
 
 
 def _validate_schema(yd, branch=False):
@@ -125,17 +134,15 @@ def _validate_schema(yd, branch=False):
     })
 
     schema.validate(yd)
-
+    from schema import And, Use
     task_schema = Schema({
         'class': str,
         Optional('kwargs'): Or({str: object}),
-        Optional('args'): Or([object], object)
+        Optional('args'): Or([object], And(Use(lambda a: isinstance(a, dict)), False))
     })
 
     def validate_tasks(tasks):
         for t in tasks:
-            if not isinstance(t, dict):
-                raise TypeError('todo')
             try:
                 Schema({'branch': dict}).validate(t)
                 _validate_schema(t, True)
@@ -170,6 +177,20 @@ def _is_regular_method_or_class_method(cls, mtd_name):
             return True
 
     return False
+
+
+def make_logger(name, level=logging.INFO, fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s'):
+    # TODO: better logging
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    if not logger.handlers:
+        ch = logging.StreamHandler(sys.stderr)
+        ch.setLevel(level)
+        formatter = logging.Formatter(fmt)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+    return logger
 
 
 def build_lane_from_yaml(path):
