@@ -1,5 +1,5 @@
-from .framework import errors
-from .framework.lane import Lane, Branch, Task
-from .framework.utils import build_lane_from_yaml, make_logger
-
-logger = make_logger('sparklanes')
+from ._framework import errors
+from ._framework import log
+from ._framework.lane import Lane, Branch
+from ._framework.task import Task
+from ._framework.utils import build_lane_from_yaml

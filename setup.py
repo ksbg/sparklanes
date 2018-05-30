@@ -9,10 +9,10 @@ setup(
     url='https://github.com/ksbg/sparklanes',
     author='Kevin Baumgarten',
     author_email='kevin@ksbg.io',
-    description='A lightweight framework to build and execute data processing pipelines in pyspark '
+    description='A lightweight _framework to build and execute data processing pipelines in pyspark '
                 '(Apache Spark\'s python API)',
-    packages=['sparklanes', 'sparklanes.submit', 'sparklanes.framework'],
+    packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
     install_requires=requirements,
-    package_data={'sparklanes.submit': ['requirements-submit.txt']},
-    entry_points={'console_scripts': ['lane-submit=sparklanes.submit.submit:_submit_to_spark']}
+    package_data={'sparklanes._submit': ['requirements-submit.txt']},
+    entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit:submit_to_spark']}
 )

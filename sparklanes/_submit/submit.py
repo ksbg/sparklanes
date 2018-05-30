@@ -3,11 +3,12 @@ import logging
 import os
 import re
 import shutil
+# import sys
 import tempfile
 from subprocess import call
 
 
-def _submit_to_spark():
+def submit_to_spark():
     args = __parse_and_validate_args()
     if args['spark_args']:
         args['spark_args'] = __prep_spark_args(spark_args=args['spark_args'])
@@ -15,20 +16,26 @@ def _submit_to_spark():
     logging.debug(args)
 
     dist = __make_tmp_dir()
+    # dist = '/Users/kb/PycharmProjects/priv/pyspark-etl/tmp_dist'
     try:
+        print('libs')
         libs_dir = __install_libs(dist_dir=dist, additional_reqs=args['requirements'])
+        print('pkg')
         __package(tasks_pkg=args['package'],
                   dist_dir=dist,
                   libs_dir=libs_dir,
                   custom_main=args['main'],
                   extra_data=args['extra_data'])
+        print('submit')
+        import sys
 
+        # sys.path.insert(0, dist + '/tasks.zip')
         __submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'])
 
     except Exception as e:
-        __clean_up(dist)
+        # __clean_up(dist)
         raise e
-    __clean_up(dist)
+    # __clean_up(dist)
 
 
 def __prep_spark_args(spark_args):
@@ -52,7 +59,7 @@ def __parse_and_validate_args():
     parser.add_argument('-e', '--extra-data', nargs='*', required=False,
                         help='Path to any additional files or directories that should be packaged and sent to Spark.')
     parser.add_argument('-s', '--spark-args', nargs='*', required=False,
-                        help='Any additional arguments that should be sent to Spark via spark-submit.'
+                        help='Any additional arguments that should be sent to Spark via spark-_submit.'
                              'e.g. `--spark-args executor-memory=20G total-executor-cores=100`')
     parser.add_argument('-r', '--requirements', type=str, required=False,
                         help='Path to a `requirements.txt` specifying any additional dependencies of your tasks.')
@@ -146,8 +153,8 @@ def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
         shutil.copy(os.path.realpath(custom_main),
                     os.path.join(dist_dir, 'main.py'))
 
-    # Package framework
-    shutil.make_archive(os.path.join(dist_dir, 'framework'),
+    # Package _framework
+    shutil.make_archive(os.path.join(dist_dir, '_framework'),
                         'zip',
                         os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'),
                         './sparklanes/')
@@ -173,7 +180,7 @@ def __submit(lane_yaml, dist_dir, spark_args):
         cmd += spark_args
 
     # Packaged App & lane
-    cmd += ['--py-files', 'libs.zip,framework.zip,tasks.zip', 'main.py']
+    cmd += ['--py-files', 'libs.zip,_framework.zip,tasks.zip', 'main.py']
     if lane_yaml:
         cmd += ['--lane', lane_yaml]
 

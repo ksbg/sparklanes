@@ -8,4 +8,4 @@ lane:
     - class: tasks.AddRowIndex
     - class: tasks.NormalizeColumns
     - class: tasks.SaveAsJSON
-      args: [out]
+      args: [data]

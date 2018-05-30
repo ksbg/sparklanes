@@ -1,21 +1,26 @@
 """Executes the 'iris' example lane, and checks if the resulting files match what's expected"""
-from unittest import TestCase
-from tempfile import mkdtemp
-import os
-import sys
-import subprocess
-from shutil import rmtree
-from filecmp import cmp
-from helpers.tasks import iris_tasks
-from sparklanes import Lane
-from sparklanes.framework.utils import make_logger
 import logging
+import os
+import subprocess
+import sys
+import warnings
+from filecmp import cmp
+from shutil import rmtree
+from tempfile import mkdtemp
+from unittest import TestCase
+
+from sparklanes import Lane
+from sparklanes._framework.config import VERBOSE_TESTING
+from sparklanes._framework.log import make_default_logger
+from .helpers.tasks import iris_tasks
 
 
 class TestIrisLane(TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestIrisLane, cls).setUpClass()
+        warnings.simplefilter("ignore")
+
         cls.tmp_dir1 = mkdtemp()  # Used for test_from_code
         cls.tmp_dir2 = mkdtemp()  # Used for test_from_command_line
         cls.tmp_dir3 = mkdtemp()  # Used for test_from_command_line_with_custom_main
@@ -27,15 +32,17 @@ class TestIrisLane(TestCase):
         # Add tasks to path
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers', 'tasks'))
 
-        # Install sparklanes package to make sure the command line script is available
-        with open(os.devnull, 'wb') as devnull:
-            subprocess.call([sys.executable, "-m", "pip", "install", os.path.join(cls.mdl_dir, '..')],
-                            stderr=subprocess.STDOUT,
-                            stdout=devnull)
+        # Verbosity
+        if not VERBOSE_TESTING:
+            logger = make_default_logger('sparklanes')
+            logger.handlers[0].setLevel(logging.CRITICAL)
+            cls.subprocess_out = {'stderr': subprocess.STDOUT, 'stdout': open(os.devnull, 'wb')}
+        else:
+            cls.subprocess_out = {}
 
-        # Decrease logging verbosity
-        logger = make_logger('sparklanes')
-        logger.handlers[0].setLevel(logging.CRITICAL)
+        # Install sparklanes package to make sure the command line script is available
+        subprocess.call([sys.executable, "-m", "pip", "install", os.path.join(cls.mdl_dir, '..')],
+                        **cls.subprocess_out)
 
     def __find_iris_output_json(self, out_dir):
         out_file = None
@@ -48,6 +55,19 @@ class TestIrisLane(TestCase):
             self.fail('Could not find the iris lane\'s output file')
 
         return out_file
+
+    def __prepare_iris_tmp_dir(self, tmp_dir):
+        # Insert the location of the temporary folder into the YAML file
+        new_yml_path = os.path.join(tmp_dir, 'iris.yml')
+        out_dir = os.path.join(tmp_dir, 'out')
+        package_dir = os.path.join(self.mdl_dir, 'helpers', 'tasks')
+        data_dir = os.path.join(self.mdl_dir, 'helpers', 'data')
+
+        with open(os.path.join(self.mdl_dir, 'helpers', 'yml', 'iris.yml'), 'r') as iris_yml_stream:
+            with open(new_yml_path, 'w') as new_yml_stream:
+                new_yml_stream.write(iris_yml_stream.read() % (self.iris_input, out_dir))
+
+        return new_yml_path, package_dir, data_dir, out_dir
 
     def test_from_code(self):
         out_dir = os.path.join(self.tmp_dir1, 'out')
@@ -63,30 +83,16 @@ class TestIrisLane(TestCase):
 
         self.assertEqual(cmp(self.expected_output, out_file), True)
 
-    def __prepare_iris_tmp_dir(self, tmp_dir):
-        # Insert the location of the temporary folder into the YAML file
-        new_yml_path = os.path.join(tmp_dir, 'iris.yml')
-        out_dir = os.path.join(tmp_dir, 'out')
-        package_dir = os.path.join(self.mdl_dir, 'helpers', 'tasks')
-        data_dir = os.path.join(self.mdl_dir, 'helpers', 'data')
-
-        with open(os.path.join(self.mdl_dir, 'helpers', 'yml', 'iris.yml'), 'r') as iris_yml_stream:
-            with open(new_yml_path, 'w') as new_yml_stream:
-                new_yml_stream.write(iris_yml_stream.read() % (self.iris_input, out_dir))
-
-        return new_yml_path, package_dir, data_dir, out_dir
-
     def test_from_command_line(self):
         new_yml_path, package_dir, data_dir, out_dir = self.__prepare_iris_tmp_dir(self.tmp_dir2)
 
         # Execute command
-        with open(os.devnull, 'wb') as devnull:
-            subprocess.check_call(['lane-submit',
-                                   '--yaml', new_yml_path,
-                                   '--package', package_dir,
-                                   '--extra-data', data_dir],
-                                  stdout=devnull,
-                                  stderr=subprocess.STDOUT)
+
+        subprocess.check_call(['lane-submit',
+                               '--yaml', new_yml_path,
+                               '--package', package_dir,
+                               '--extra-data', data_dir],
+                              **self.subprocess_out)
 
         # Find output file
         out_file = self.__find_iris_output_json(out_dir)
@@ -119,8 +125,7 @@ class TestIrisLane(TestCase):
                                    '-p', package_dir,
                                    '-e', data_dir,
                                    '-m', main_path],
-                                  stdout=devnull,
-                                  stderr=subprocess.STDOUT)
+                                  **self.subprocess_out)
 
         out_file = self.__find_iris_output_json(out_dir)
 
@@ -133,5 +138,7 @@ class TestIrisLane(TestCase):
         rmtree(cls.tmp_dir3)
 
         # Set logging verbosity back
-        logger = make_logger('sparklanes')
-        logger.handlers[0].setLevel(logging.INFO)
+        if not VERBOSE_TESTING:
+            logger = make_default_logger('sparklanes')
+            logger.handlers[0].setLevel(logging.INFO)
+            cls.subprocess_out['stdout'].close()

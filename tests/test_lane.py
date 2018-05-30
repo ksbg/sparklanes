@@ -5,14 +5,20 @@ from unittest import TestCase
 
 from six import PY2
 
-from helpers.tasks import (UncacheAttribute, CacheAttribute, AccessCacheAttribute, ValidTask1, ValidTask2, ValidTask3,
-                           ValidBranchTask1, ValidBranchTask2, ValidBranchTask3, ValidBranchTask2Subtask1,
-                           ValidBranchTask2Subtask2, UndecoratedTask, ValidReqParams, ClearCache, AttributeDoesNotExist,
-                           ExceptionThrowingTask)
-from sparklanes.framework import utils
-from sparklanes.framework.errors import (TaskInitializationError, LaneSchemaError, LaneImportError, LaneExecutionError,
-                                         CacheError)
-from sparklanes.framework.lane import Task, Lane, Branch, _LaneTask, _TaskCache
+from sparklanes._framework.config import INTERNAL_LOGGER_NAME
+from sparklanes._framework.config import VERBOSE_TESTING
+from sparklanes._framework.errors import (TaskInitializationError, LaneSchemaError, LaneImportError, LaneExecutionError,
+                                          CacheError)
+from sparklanes._framework.lane import Lane, Branch, LaneTask
+from sparklanes._framework.log import make_default_logger
+from sparklanes._framework.task import Task, TaskCache
+from sparklanes._framework.utils import build_lane_from_yaml
+from sparklanes._framework.validation import validate_params
+from .helpers.tasks import (UncacheAttribute, CacheAttribute, AccessCacheAttribute, ValidTask1, ValidTask2, ValidTask3,
+                            ValidBranchTask1, ValidBranchTask2, ValidBranchTask3, ValidBranchTask2Subtask1,
+                            ValidBranchTask2Subtask2, UndecoratedTask, ValidReqParams, ClearCache,
+                            AttributeDoesNotExist,
+                            ExceptionThrowingTask)
 
 if PY2:
     from StringIO import StringIO
@@ -20,25 +26,28 @@ else:
     from io import StringIO
 
 
-class TestUtils(TestCase):
+class TestLane(TestCase):
     @classmethod
     def setUp(cls):
-        super(TestUtils, cls).setUpClass()
+        super(TestLane, cls).setUpClass()
 
         class StdOutCatcher(object):
             def __init__(self):
                 self.data = []
 
+            def __str__(self):
+                return "".join(self.data)
+
             def write(self, s):
                 self.data.append(s)
 
-            def __str__(self):
-                return "".join(self.data)
+            def flush(self):  # Expected by PY3
+                pass
 
         cls.StdOutCatcher = StdOutCatcher
 
         # Capture logging
-        cls.logger = utils.make_logger('sparklanes')
+        cls.logger = make_default_logger(INTERNAL_LOGGER_NAME)
         cls.log_capture = StringIO()
         cls.logger.handlers[0].setLevel(logging.CRITICAL)
         ch = logging.StreamHandler(cls.log_capture)
@@ -50,19 +59,20 @@ class TestUtils(TestCase):
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers', 'tasks'))
 
         # Don't show print statements
-        sys.stdout = open(os.devnull, 'w')
+        if not VERBOSE_TESTING:
+            sys.stdout = open(os.devnull, 'w')
 
     def __call_param_validator(self, cls, mtd_name, should_raise, *args, **kwargs):
         if should_raise:
             try:
-                self.assertRaises(TaskInitializationError, utils._validate_params, cls, mtd_name, *args, **kwargs)
+                self.assertRaises(TaskInitializationError, validate_params, cls, mtd_name, *args, **kwargs)
             except AssertionError as e:
                 print('Cls: `%s`, Mtd: `%s`, Args: `%s`, Kwargs: `%s`'
                       % (cls.__name__, mtd_name, str(args), str(kwargs)))
                 raise e
         else:
             try:
-                utils._validate_params(cls, mtd_name, *args, **kwargs)
+                validate_params(cls, mtd_name, *args, **kwargs)
             except Exception as e:
                 self.fail('`%s.%s` raised unexpectedly with args `%s` and kwargs `%s`: \n%s.%s: %s'
                           % (cls.__name__, mtd_name, str(args), str(kwargs), e.__class__.__module__,
@@ -77,15 +87,20 @@ class TestUtils(TestCase):
         sys.stdout = lane1_catcher
         lane1.run()
         lane1_log_output = self.log_capture.getvalue()
+
+        # Reset captured log
         self.log_capture.truncate(0)
+        if not PY2:
+            self.log_capture.seek(0)
 
         # Catch lane2 output
         sys.stdout = lane2_catcher
         lane2.run()
         lane2_log_output = self.log_capture.getvalue()
 
-        # Reset output
-        self.log_capture.truncate(0)
+        # Create new StringIO
+        self.log_capture = StringIO()
+
         sys.stdout = sys.__stdout__
 
         # String to list (for easier debugging) & remove execution time from log
@@ -102,6 +117,7 @@ class TestUtils(TestCase):
 
         # Compare
         self.assertEqual(lane1_catcher.data, lane2_catcher.data)
+        self.maxDiff = 13000
         self.assertEqual(lane1_log_output, lane2_log_output)
 
     def __get_abs_yml_path(self, name):
@@ -118,12 +134,11 @@ class TestUtils(TestCase):
         # Invalid name
         self.assertRaises(TypeError, Lane, self)
 
-        # Trying to instantiate _LaneTask on its own
-        self.assertRaises(TaskInitializationError, _LaneTask)
+        # Trying to instantiate LaneTask on its own
+        self.assertRaises(TaskInitializationError, LaneTask)
 
-        # Trying to instantiate _TaskCache on its own
-        self.assertRaises(CacheError, _TaskCache)
-
+        # Trying to instantiate TaskCache on its own
+        self.assertRaises(CacheError, TaskCache)
 
     def test_param_validation(self):
         class Cls(object):
@@ -204,14 +219,14 @@ class TestUtils(TestCase):
             check.append((m, [1], {'b': 1, 'c': 1, 'd': 1, 'e': 1}, True))  # Too many kwargs
             check.append((m, [1, 2, 3], {'c': 1, 'd': 1}, True))  # Too many args and kwargs
 
-        for m, a, k, s in check:
-            self.__call_param_validator(Cls, m, s, *a, **k)
+        for mtd, args, kwargs, should_raise in check:
+            self.__call_param_validator(Cls, mtd, should_raise, *args, **kwargs)
 
         # Not a method
-        self.assertRaises(TypeError, utils._validate_params, Cls, 'some_attribute')
+        self.assertRaises(TypeError, validate_params, Cls, 'some_attribute')
 
         # Not an attribute
-        self.assertRaises(AttributeError, utils._validate_params, Cls, 'not_an_attribute')
+        self.assertRaises(AttributeError, validate_params, Cls, 'not_an_attribute')
 
     def test_valid_yaml_lanes(self):
         lane = (Lane(name='ValidSimple')
@@ -219,7 +234,7 @@ class TestUtils(TestCase):
                 .add(ValidTask1)
                 .add(ValidTask2)
                 .add(ValidTask3))
-        lane_from_yaml = utils.build_lane_from_yaml(self.__get_abs_yml_path('valid_simple'))
+        lane_from_yaml = build_lane_from_yaml(self.__get_abs_yml_path('valid_simple'))
         self.__cmp_lane_output(lane, lane_from_yaml)
 
         lane = (Lane(name='ValidBranched')
@@ -230,7 +245,7 @@ class TestUtils(TestCase):
                      .add(ValidBranchTask2)
                      .add(ValidBranchTask3))
                 .add(ValidTask3))
-        lane_from_yaml = utils.build_lane_from_yaml(self.__get_abs_yml_path('valid_branched'))
+        lane_from_yaml = build_lane_from_yaml(self.__get_abs_yml_path('valid_branched'))
         self.__cmp_lane_output(lane, lane_from_yaml)
 
         lane = (Lane(name='ValidBranchedNested')
@@ -244,7 +259,7 @@ class TestUtils(TestCase):
                           .add(ValidBranchTask2Subtask2))
                      .add(ValidBranchTask3))
                 .add(ValidTask3))
-        lane_from_yaml = utils.build_lane_from_yaml(self.__get_abs_yml_path('valid_branched_nested'))
+        lane_from_yaml = build_lane_from_yaml(self.__get_abs_yml_path('valid_branched_nested'))
         self.__cmp_lane_output(lane, lane_from_yaml)
 
         lane = (Lane(name='ValidBranchedNestedDeeply')
@@ -264,30 +279,30 @@ class TestUtils(TestCase):
                           .add(ValidBranchTask2Subtask2))
                      .add(ValidBranchTask3))
                 .add(ValidTask3))
-        lane_from_yaml = utils.build_lane_from_yaml(self.__get_abs_yml_path('valid_branched_nested_deeply'))
+        lane_from_yaml = build_lane_from_yaml(self.__get_abs_yml_path('valid_branched_nested_deeply'))
         self.__cmp_lane_output(lane, lane_from_yaml)
 
     def test_invalid_yaml_lanes(self):
         self.assertRaises(LaneImportError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_nonexistant_class'))
         self.assertRaises(LaneImportError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_nonexistant_module'))
         self.assertRaises(LaneImportError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_class_without_module'))
         self.assertRaises(LaneSchemaError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_schema_missing_fields'))
         self.assertRaises(LaneSchemaError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_schema_redundant_fields'))
         self.assertRaises(LaneSchemaError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_schema_wrong_types'))
         self.assertRaises(TaskInitializationError,
-                          utils.build_lane_from_yaml,
+                          build_lane_from_yaml,
                           self.__get_abs_yml_path('invalid_too_many_params'))
 
     def test_caching(self):
@@ -362,8 +377,8 @@ class TestUtils(TestCase):
         self.assertRaises(TypeError, Lane().add, UndecoratedTask)
 
         # Check decorated class type
-        self.assertEqual(issubclass(ValidTask1, _LaneTask), True)
-        self.assertEqual(issubclass(UndecoratedTask, _LaneTask), False)
+        self.assertEqual(issubclass(ValidTask1, LaneTask), True)
+        self.assertEqual(issubclass(UndecoratedTask, LaneTask), False)
 
         # Check if decorated classes have expected attributes
         for attr in ('_entry_mtd', 'cache', 'uncache', 'clear_cache', '__call__'):
@@ -373,4 +388,5 @@ class TestUtils(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        sys.stdout = sys.__stdout__
+        if not VERBOSE_TESTING:
+            sys.stdout = sys.__stdout__
