@@ -3,52 +3,41 @@ import logging
 import os
 import re
 import shutil
-# import sys
+import sys
 import tempfile
-from subprocess import call
+from subprocess import call, STDOUT
+
+from six import PY2
 
 
-def submit_to_spark():
-    args = __parse_and_validate_args()
+def spark_submit():
+    _package_and_submit(sys.argv[1:])
+
+
+def _package_and_submit(args):
+    args = _parse_and_validate_args(args)
+
     if args['spark_args']:
         args['spark_args'] = __prep_spark_args(spark_args=args['spark_args'])
 
     logging.debug(args)
-
     dist = __make_tmp_dir()
-    # dist = '/Users/kb/PycharmProjects/priv/pyspark-etl/tmp_dist'
     try:
-        print('libs')
-        libs_dir = __install_libs(dist_dir=dist, additional_reqs=args['requirements'])
-        print('pkg')
+        libs_dir = __install_libs(dist_dir=dist, additional_reqs=args['requirements'], silent=args['silent'])
         __package(tasks_pkg=args['package'],
                   dist_dir=dist,
                   libs_dir=libs_dir,
                   custom_main=args['main'],
                   extra_data=args['extra_data'])
-        print('submit')
-        import sys
-
-        # sys.path.insert(0, dist + '/tasks.zip')
-        __submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'])
+        __call_spark_submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'], silent=args['silent'])
 
     except Exception as e:
-        # __clean_up(dist)
+        __clean_up(dist)
         raise e
-    # __clean_up(dist)
+    __clean_up(dist)
 
 
-def __prep_spark_args(spark_args):
-    subcmd = []
-    for sa in spark_args:
-        sas = sa.split('=')
-        sas[0] = '--' + sas[0]
-        subcmd += sas
-
-    return subcmd
-
-
-def __parse_and_validate_args():
+def _parse_and_validate_args(args):
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
     parser.add_argument('-y', '--yaml', type=str, required=True,
                         help='Path to the yaml definition file.')
@@ -63,7 +52,9 @@ def __parse_and_validate_args():
                              'e.g. `--spark-args executor-memory=20G total-executor-cores=100`')
     parser.add_argument('-r', '--requirements', type=str, required=False,
                         help='Path to a `requirements.txt` specifying any additional dependencies of your tasks.')
-    args = parser.parse_args().__dict__
+    parser.add_argument('--silent', help='If set, no output will be sent to console',
+                        action='store_true')
+    args = parser.parse_args(args).__dict__
 
     def validate_path(p, check_file=True, check_dir=False):
         if not p:
@@ -72,7 +63,7 @@ def __parse_and_validate_args():
             abs_path = os.path.join(os.path.abspath(os.curdir), p) if not os.path.isabs(p) else p
             if not (os.path.isfile(abs_path) if check_file else False) \
                     and not (os.path.isdir(abs_path) if check_dir else False):
-                raise ValueError('`%s` does not exist' % p)
+                raise SystemExit('`%s` does not exist' % p)
 
         return abs_path
 
@@ -83,18 +74,27 @@ def __parse_and_validate_args():
     if args['extra_data']:
         for i in range(len(args['extra_data'])):
             args['extra_data'][i] = validate_path(args['extra_data'][i], True, True)
-    if not os.path.isfile(os.path.join(args['package'], '__init__.py')):
-        # Even though __init__.py is not required anymore in Python 3.3+, for now it is considered needed
-        raise ValueError('Could not confirm `%s` is a python package. Make sure it contains an `__init__.py`.')
+    if PY2 and not os.path.isfile(os.path.join(args['package'], '__init__.py')):
+        raise SystemExit('Could not confirm `%s` is a python package. Make sure it contains an `__init__.py`.')
 
     # Check spark args
     if args['spark_args']:
         pattern = re.compile('[\w\-_]+=.+')
         for sa in args['spark_args']:
             if not pattern.match(sa):
-                raise ValueError('Spark argument `%s` does not seem to be in the correct format `ARG_NAME=ARG_VAL`.')
+                raise SystemExit('Spark argument `%s` does not seem to be in the correct format `ARG_NAME=ARG_VAL`.')
 
     return args
+
+
+def __prep_spark_args(spark_args):
+    subcmd = []
+    for sa in spark_args:
+        sas = sa.split('=')
+        sas[0] = '--' + sas[0]
+        subcmd += sas
+
+    return subcmd
 
 
 def __make_tmp_dir():
@@ -104,7 +104,7 @@ def __make_tmp_dir():
     return tmp_dir
 
 
-def __install_libs(dist_dir, additional_reqs):
+def __install_libs(dist_dir, additional_reqs, silent):
     logging.info('Installing dependencies')
     libs_dir = os.path.join(dist_dir, 'libs')
     if not os.path.isdir(libs_dir):
@@ -121,10 +121,13 @@ def __install_libs(dist_dir, additional_reqs):
     # Remove duplicates
     requirements = list(set(requirements))
 
+    devnull = open(os.devnull, 'w')
+    outp = {'stderr': STDOUT, 'stdout': devnull} if silent else {}
     for p in requirements:
         cmd = ['pip', 'install', p, '-t', libs_dir]
         logging.debug('Calling `%s`' % str(cmd))
-        call(cmd)
+        call(cmd, **outp)
+    devnull.close()
 
     return libs_dir
 
@@ -172,7 +175,7 @@ def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
                 raise IOError('File `%s` not found at `%s`.' % (d, real_path))
 
 
-def __submit(lane_yaml, dist_dir, spark_args):
+def __call_spark_submit(lane_yaml, dist_dir, spark_args, silent):
     cmd = ['spark-submit']
 
     # Supplied spark arguments
@@ -188,9 +191,11 @@ def __submit(lane_yaml, dist_dir, spark_args):
     logging.debug(str(cmd))
 
     # Submit
-    call(cmd, cwd=dist_dir)
+    devnull = open(os.devnull, 'w')
+    outp = {'stderr': STDOUT, 'stdout': devnull} if silent else {}
+    call(cmd, cwd=dist_dir, **outp)
+    devnull.close()
 
 
 def __clean_up(dist_dir):
     shutil.rmtree(dist_dir)
-

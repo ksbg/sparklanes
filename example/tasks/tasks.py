@@ -1,7 +1,7 @@
 from pyspark.sql.functions import monotonically_increasing_id
 
 from sparklanes import Task
-from sparklanes.spark import spark_session as spark
+from sparklanes.spark import session as spark
 
 
 @Task('extract_data')

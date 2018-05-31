@@ -5,8 +5,8 @@ from unittest import TestCase
 
 from six import PY2
 
-from sparklanes._framework.config import INTERNAL_LOGGER_NAME
-from sparklanes._framework.config import VERBOSE_TESTING
+from sparklanes._framework.env import INTERNAL_LOGGER_NAME
+from sparklanes._framework.env import VERBOSE_TESTING
 from sparklanes._framework.errors import (TaskInitializationError, LaneSchemaError, LaneImportError, LaneExecutionError,
                                           CacheError)
 from sparklanes._framework.lane import Lane, Branch, LaneTask
@@ -306,7 +306,6 @@ class TestLane(TestCase):
                           self.__get_abs_yml_path('invalid_too_many_params'))
 
     def test_caching(self):
-
         # Should not throw
         lane = (Lane()
                 .add(CacheAttribute, 'a')

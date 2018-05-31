@@ -8,7 +8,7 @@ from types import MethodType
 
 from six import string_types, PY2, PY3
 
-from .config import INTERNAL_LOGGER_NAME
+from .env import INTERNAL_LOGGER_NAME
 from .errors import CacheError, TaskInitializationError, LaneExecutionError
 from .log import make_default_logger
 

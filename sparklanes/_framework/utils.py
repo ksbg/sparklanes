@@ -1,43 +1,11 @@
 from importlib import import_module
 
 import yaml
-from pyspark import SparkContext
-from pyspark.sql import SparkSession
-from schema import Schema, SchemaError, SchemaMissingKeyError
+from schema import SchemaError
 
 from .errors import LaneSchemaError, LaneImportError
 from .lane import Branch, Lane
 from .validation import validate_schema
-
-
-def set_spark_context(new_sc):
-    """
-    Reassigns the default, globally accessible SparkContext
-
-    Parameters
-    ----------
-    new_sc (pyspark.SparkContext)
-    """
-    if not isinstance(new_sc, SparkContext):
-        raise TypeError('`new_sc` must be an instance of `pyspark.SparkContext`.')
-
-    global spark_context
-    spark_context = new_sc
-
-
-def set_spark_session(new_spark):
-    """
-    Reassigns the default, globally accessible SparkSession
-
-    Parameters
-    ----------
-    new_spark (pyspark.sql.SparkSession)
-    """
-    if not isinstance(new_spark, SparkSession):
-        raise TypeError('`new_spark` must be an instance of `pyspark.sql.SparkSession`.')
-
-    global spark_session
-    spark_session = new_spark
 
 
 def build_lane_from_yaml(path):

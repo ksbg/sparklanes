@@ -2,7 +2,7 @@ from inspect import isclass
 
 from six import string_types
 
-from .config import INTERNAL_LOGGER_NAME
+from .env import INTERNAL_LOGGER_NAME
 from .errors import LaneExecutionError
 from .log import make_default_logger
 from .task import LaneTask, LaneTaskThread
