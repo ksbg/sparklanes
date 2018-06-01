@@ -1,7 +1,6 @@
 from pyspark.sql.functions import monotonically_increasing_id
 
-from sparklanes import Task
-from sparklanes.spark import session as spark
+from sparklanes import Task, conn
 
 
 @Task('extract_data')
@@ -11,10 +10,10 @@ class ExtractIrisCSVData(object):
 
     def extract_data(self):
         # Read the csv
-        iris_df = spark.read.csv(path=self.iris_csv_path,
-                                 sep=',',
-                                 header=True,
-                                 inferSchema=True)
+        iris_df = conn.spark.read.csv(path=self.iris_csv_path,
+                                      sep=',',
+                                      header=True,
+                                      inferSchema=True)
 
         # Make it available to tasks that follow
         self.cache('iris_df', iris_df)
@@ -39,7 +38,9 @@ class NormalizeColumns(object):
         for col in columns:
             col_min = float(self.iris_df.agg({col: "min"}).collect()[0]['min(%s)' % col])
             col_max = float(self.iris_df.agg({col: "max"}).collect()[0]['max(%s)' % col])
-            self.iris_df = self.iris_df.withColumn(col + '_norm', (self.iris_df[col] - col_min) / (col_max - col_min))
+            self.iris_df = self.iris_df.withColumn(
+                col + '_norm', (self.iris_df[col] - col_min) / (col_max - col_min)
+            )
 
         # Update Cache
         self.cache('iris_df', self.iris_df)

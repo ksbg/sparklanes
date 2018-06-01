@@ -5,17 +5,19 @@ python:
   - "3.5"
   - "3.6"
 install:
-  - pip install -r requirements.txt
+  - pip install -r requirements-test.txt
   - pip install .
-  - pip install coverage
+  - pip install coveralls
 env:
   - VERBOSE_TESTING=0
+  - INIT_SPARK_ON_IMPORT=1
 script:
   - coverage run -p -m tests
 after_success:
   - coverage combine
   - coverage report
   - coveralls
+  - pylint --errors-only sparklanes
 notifications:
   email:
     recipients:

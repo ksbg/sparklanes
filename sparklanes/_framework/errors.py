@@ -1,3 +1,4 @@
+"""Exceptions"""
 from schema import SchemaError
 
 
@@ -8,12 +9,13 @@ class LaneSchemaError(SchemaError):
 
     @property
     def code(self):
-        c = super(LaneSchemaError, self).code
-        return 'PipelineSchemaError: ' + c + '\nThe lane YAML file does not match the defined schema.'
+        """Show the specific error from the super class"""
+        error = super(LaneSchemaError, self).code
+        return 'PipelineSchemaError: ' + error + '\nYAML file does not match the defined schema.'
 
 
 class LaneImportError(Exception):
-    """Should be thrown when a module or class specified in a YAML definition file cannot be imported."""
+    """Should be thrown when a module or class in a YAML definition file cannot be imported."""
     pass
 
 
@@ -23,7 +25,7 @@ class CacheError(AttributeError):
 
 
 class TaskInitializationError(Exception):
-    """Should be thrown whenever transformation of a class into a task, as part of a lane/branch, fails."""
+    """Should be thrown whenever transformation of a class into a task fails (during decoration)."""
     pass
 
 

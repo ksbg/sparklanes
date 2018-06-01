@@ -1,3 +1,4 @@
+"""Module that allows submitting lanes to spark using YAML definitions"""
 import argparse
 import logging
 import os
@@ -7,37 +8,51 @@ import sys
 import tempfile
 from subprocess import call, STDOUT
 
-from six import PY2
+SPARK_SUBMIT_FLAGS = ['verbose', 'supervised']
 
 
 def spark_submit():
+    """Console-script entry point"""
     _package_and_submit(sys.argv[1:])
 
 
 def _package_and_submit(args):
-    args = _parse_and_validate_args(args)
+    """
+    Packages and submits a job, which is defined in a YAML file, to Spark.
 
-    if args['spark_args']:
-        args['spark_args'] = __prep_spark_args(spark_args=args['spark_args'])
+    Parameters
+    ----------
+    args (List): Command-line arguments
+    """
+    args = _parse_and_validate_args(args)
 
     logging.debug(args)
     dist = __make_tmp_dir()
     try:
-        libs_dir = __install_libs(dist_dir=dist, additional_reqs=args['requirements'], silent=args['silent'])
-        __package(tasks_pkg=args['package'],
-                  dist_dir=dist,
-                  libs_dir=libs_dir,
-                  custom_main=args['main'],
-                  extra_data=args['extra_data'])
-        __call_spark_submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'], silent=args['silent'])
+        __package_dependencies(dist_dir=dist, additional_reqs=args['requirements'],
+                               silent=args['silent'])
+        __package_app(tasks_pkg=args['package'],
+                      dist_dir=dist,
+                      custom_main=args['main'],
+                      extra_data=args['extra_data'])
+        __run_spark_submit(lane_yaml=args['yaml'], dist_dir=dist, spark_args=args['spark_args'],
+                           silent=args['silent'])
 
-    except Exception as e:
+    except Exception as exc:
         __clean_up(dist)
-        raise e
+        raise exc
     __clean_up(dist)
 
 
 def _parse_and_validate_args(args):
+    """
+    Parse and validate arguments. During validation, it is checked whether the given
+    files/directories exist, while also converting relative paths to absolute ones.
+
+    Parameters
+    ----------
+    args (List): Command-line arguments
+    """
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
     parser.add_argument('-y', '--yaml', type=str, required=True,
                         help='Path to the yaml definition file.')
@@ -46,72 +61,120 @@ def _parse_and_validate_args(args):
     parser.add_argument('-p', '--package', type=str, required=True,
                         help='Path to the python package containing your tasks.')
     parser.add_argument('-e', '--extra-data', nargs='*', required=False,
-                        help='Path to any additional files or directories that should be packaged and sent to Spark.')
+                        help='Path to any additional files or directories that should be packaged '
+                             'and sent to Spark.')
     parser.add_argument('-s', '--spark-args', nargs='*', required=False,
-                        help='Any additional arguments that should be sent to Spark via spark-_submit.'
-                             'e.g. `--spark-args executor-memory=20G total-executor-cores=100`')
+                        help='Any additional arguments that should be sent to Spark via '
+                             'spark-submit. '
+                             '(e.g. `--spark-args executor-memory=20G total-executor-cores=100`)')
     parser.add_argument('-r', '--requirements', type=str, required=False,
-                        help='Path to a `requirements.txt` specifying any additional dependencies of your tasks.')
+                        help='Path to a `requirements.txt` specifying any additional dependencies '
+                             'of your tasks.')
     parser.add_argument('--silent', help='If set, no output will be sent to console',
                         action='store_true')
     args = parser.parse_args(args).__dict__
 
-    def validate_path(p, check_file=True, check_dir=False):
-        if not p:
-            return p
-        else:
-            abs_path = os.path.join(os.path.abspath(os.curdir), p) if not os.path.isabs(p) else p
-            if not (os.path.isfile(abs_path) if check_file else False) \
-                    and not (os.path.isdir(abs_path) if check_dir else False):
-                raise SystemExit('`%s` does not exist' % p)
-
-        return abs_path
-
     # Check/fix files/dirs
-    args['package'] = validate_path(args['package'], False, True)
-    for p in ('yaml', 'requirements', 'main'):
-        args[p] = validate_path(args[p])
+    args['package'] = __validate_and_fix_path(args['package'], check_dir=True)
+    for param in ('yaml', 'requirements', 'main'):
+        args[param] = __validate_and_fix_path(args[param], check_file=True)
     if args['extra_data']:
         for i in range(len(args['extra_data'])):
-            args['extra_data'][i] = validate_path(args['extra_data'][i], True, True)
-    if PY2 and not os.path.isfile(os.path.join(args['package'], '__init__.py')):
-        raise SystemExit('Could not confirm `%s` is a python package. Make sure it contains an `__init__.py`.')
+            args['extra_data'][i] = __validate_and_fix_path(args['extra_data'][i],
+                                                            check_file=True, check_dir=True)
 
-    # Check spark args
+    # Check if python package
+    if not os.path.isfile(os.path.join(args['package'], '__init__.py')):
+        raise SystemExit('Could not confirm `%s` is a python package. Make sure it contains an '
+                         '`__init__.py`.')
+
+    # Check/fix spark args
     if args['spark_args']:
-        pattern = re.compile('[\w\-_]+=.+')
-        for sa in args['spark_args']:
-            if not pattern.match(sa):
-                raise SystemExit('Spark argument `%s` does not seem to be in the correct format `ARG_NAME=ARG_VAL`.')
+        args['spark_args'] = __validate_and_fix_spark_args(args['spark_args'])
 
     return args
 
 
-def __prep_spark_args(spark_args):
-    subcmd = []
-    for sa in spark_args:
-        sas = sa.split('=')
-        sas[0] = '--' + sas[0]
-        subcmd += sas
+def __validate_and_fix_path(path, check_file=False, check_dir=False):
+    """Check if a file/directory exists and converts relative paths to absolute ones"""
+    # pylint: disable=superfluous-parens
+    if path is None:
+        return path
+    else:
+        abs_path = path
+        if not os.path.isabs(abs_path):
+            abs_path = os.path.abspath(os.path.join(os.path.abspath(os.curdir), abs_path))
+        if not (os.path.isfile(abs_path) if check_file else False) \
+                and not (os.path.isdir(abs_path) if check_dir else False):
+            raise SystemExit('Path `%s` does not exist' % path)
 
-    return subcmd
+    return abs_path
+
+
+def __validate_and_fix_spark_args(spark_args):
+    """
+    Prepares spark arguments. In the command-line script, they are passed as for example
+    `-s master=local[4] deploy-mode=client verbose`, which would be passed to spark-submit as
+    `--master local[4] --deploy-mode client --verbose`
+
+    Parameters
+    ----------
+    spark_args (List): List of spark arguments
+
+    Returns
+    -------
+    fixed_args (List): List of fixed and validated spark arguments
+    """
+    pattern = re.compile(r'[\w\-_]+=.+')
+    fixed_args = []
+    for arg in spark_args:
+        if arg not in SPARK_SUBMIT_FLAGS:
+            if not pattern.match(arg):
+                raise SystemExit('Spark argument `%s` does not seem to be in the correct format '
+                                 '`ARG_NAME=ARG_VAL`, and is also not recognized to be one of the'
+                                 'valid spark-submit flags (%s).' % (arg, str(SPARK_SUBMIT_FLAGS)))
+            arg_splits = arg.split('=')
+            arg_splits[0] = '--' + arg_splits[0]
+            fixed_args += arg_splits
+        else:
+            fixed_args += ('--' + arg)
+
+    return fixed_args
 
 
 def __make_tmp_dir():
+    """
+    Create a temporary directory where the packaged files will be located
+
+    Returns
+    -------
+    tmp_dir (str): Absolute path to temporary directory
+    """
     tmp_dir = tempfile.mkdtemp()
-    logging.debug('Created temporary dir: `%s`' % tmp_dir)
+    logging.debug('Created temporary dir: `%s`', tmp_dir)
 
     return tmp_dir
 
 
-def __install_libs(dist_dir, additional_reqs, silent):
-    logging.info('Installing dependencies')
+def __package_dependencies(dist_dir, additional_reqs, silent):
+    """
+    Installs the app's dependencies from pip and packages them (as zip), to be submitted to spark.
+
+    Parameters
+    ----------
+    dist_dir (str): Path to directory where the packaged libs shall be located
+    additional_reqs (str): Path to a requirements.txt, containing any of the app's additional
+        requirements
+    silent (bool): Flag indicating whether pip output should be printed to console
+    """
+    logging.info('Packaging dependencies')
     libs_dir = os.path.join(dist_dir, 'libs')
     if not os.path.isdir(libs_dir):
         os.mkdir(libs_dir)
 
     # Get requirements
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'requirements-submit.txt'), 'r') as req:
+    req_txt = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'requirements-submit.txt')
+    with open(req_txt, 'r') as req:
         requirements = req.read().splitlines()
     if additional_reqs:
         with open(additional_reqs, 'r') as req:
@@ -121,21 +184,33 @@ def __install_libs(dist_dir, additional_reqs, silent):
     # Remove duplicates
     requirements = list(set(requirements))
 
+    # Install
     devnull = open(os.devnull, 'w')
     outp = {'stderr': STDOUT, 'stdout': devnull} if silent else {}
-    for p in requirements:
-        cmd = ['pip', 'install', p, '-t', libs_dir]
-        logging.debug('Calling `%s`' % str(cmd))
+    for pkg in requirements:
+        cmd = ['pip', 'install', pkg, '-t', libs_dir]
+        logging.debug('Calling `%s`', str(cmd))
         call(cmd, **outp)
     devnull.close()
 
-    return libs_dir
-
-
-def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
-    logging.info('Packaging application')
-    # Package libs
+    # Package
     shutil.make_archive(os.path.join(dist_dir, 'libs'), 'zip', libs_dir, './')
+
+
+def __package_app(tasks_pkg, dist_dir, custom_main=None, extra_data=None):
+    """
+    Packages the `tasks_pkg` (as zip) to `dist_dir`. Also copies the 'main' python file to
+    `dist_dir`, to be submitted to spark. Same for `extra_data`.
+
+    Parameters
+    ----------
+    tasks_pkg (str): Path to the python package containing tasks
+    dist_dir (str): Path to the directory where the packaged code should be stored
+    custom_main (str): Path to a custom 'main' python file.
+    extra_data (List[str]): List containing paths to files/directories that should also be packaged
+        and submitted to spark
+    """
+    logging.info('Packaging application')
 
     # Package tasks
     tasks_dir_splits = os.path.split(os.path.realpath(tasks_pkg))
@@ -164,18 +239,28 @@ def __package(tasks_pkg, dist_dir, libs_dir, custom_main=None, extra_data=None):
 
     # Package extra data
     if extra_data:
-        for d in extra_data:
-            real_path = os.path.realpath(d)
+        for dat in extra_data:
+            real_path = os.path.realpath(dat)
             target = os.path.join(dist_dir, os.path.split(real_path)[1])
             if os.path.isfile(real_path):
                 shutil.copy(real_path, target)
             elif os.path.isdir(real_path):
                 shutil.copytree(real_path, target)
             else:
-                raise IOError('File `%s` not found at `%s`.' % (d, real_path))
+                raise IOError('File `%s` not found at `%s`.' % (dat, real_path))
 
 
-def __call_spark_submit(lane_yaml, dist_dir, spark_args, silent):
+def __run_spark_submit(lane_yaml, dist_dir, spark_args, silent):
+    """
+    Submits the packaged application to spark using a `spark-submit` subprocess
+
+    Parameters
+    ----------
+    lane_yaml (str): Path to the YAML lane definition file
+    dist_dir (str): Path to the directory where the packaged code is located
+    spark_args (str): String of any additional spark config args to be passed when submitting
+    silent (bool): Flag indicating whether job output should be printed to console
+    """
     cmd = ['spark-submit']
 
     # Supplied spark arguments
@@ -198,4 +283,5 @@ def __call_spark_submit(lane_yaml, dist_dir, spark_args, silent):
 
 
 def __clean_up(dist_dir):
+    """Delete packaged app"""
     shutil.rmtree(dist_dir)

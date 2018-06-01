@@ -1,10 +1,13 @@
-from six import PY2, PY3
-from schema import Schema, Optional, Or
-from .errors import TaskInitializationError, SchemaError
+"""Contains helper functions, used for class and schema validation."""
 import inspect
 
+from schema import Schema, Optional, Or
+from six import PY2, PY3
 
-def validate_schema(yd, branch=False):
+from .errors import TaskInitializationError, SchemaError
+
+
+def validate_schema(yaml_def, branch=False):
     """
     Validates if a dictionary matches the following schema.
 
@@ -12,19 +15,21 @@ def validate_schema(yd, branch=False):
       name: str {Custom name of the lane/branch} (optional)
       run_parallel: bool {Indicates whether the tasks in lane/branch should be executed in parallel)
       tasks: list {list of tasks or branches} (required)
-        - class: str {name of the class, with full path under which it is accessible, e.g. pkg.module.cls} (required)
+        - class: str {name of the class, with full path under which it is accessible,
+                 e.g. pkg.module.cls} (required)
           args: List[object] {list of arguments} (optional)
           kwargs: Dict{str: object} {dict of keyword arguments} (optional)
-        - branch: {same definition as `lane`. Can be nested infinitely with more branches in the branch's `tasks`}
+        - branch: {same definition as `lane`. Can be nested infinitely with more branches in the
+                   branch's `tasks`}
             name: ...
             ...
         ...
 
     Parameters
     ----------
-    yd (dict): Dict whose schema shall be validated
-    branch (bool): Indicates whether `yd` is a dict of a top-level lane, or of a branch inside a lane (needed for
-                   recursive validation)
+    yaml_def (dict): Dict whose schema shall be validated
+    branch (bool): Indicates whether `yaml_def` is a dict of a top-level lane, or of a branch
+        inside a lane (needed for recursion)
 
     Returns
     -------
@@ -38,7 +43,7 @@ def validate_schema(yd, branch=False):
         }
     })
 
-    schema.validate(yd)
+    schema.validate(yaml_def)
     from schema import And, Use
     task_schema = Schema({
         'class': str,
@@ -46,17 +51,17 @@ def validate_schema(yd, branch=False):
         Optional('args'): Or([object], And(Use(lambda a: isinstance(a, dict)), False))
     })
 
-    def validate_tasks(tasks):
-        for t in tasks:
+    def validate_tasks(tasks):  # pylint: disable=missing-docstring
+        for task in tasks:
             try:
-                Schema({'branch': dict}).validate(t)
-                validate_schema(t, True)
+                Schema({'branch': dict}).validate(task)
+                validate_schema(task, True)
             except SchemaError:
-                task_schema.validate(t)
+                task_schema.validate(task)
 
         return True
 
-    return validate_tasks(yd['lane']['tasks'] if not branch else yd['branch']['tasks'])
+    return validate_tasks(yaml_def['lane']['tasks'] if not branch else yaml_def['branch']['tasks'])
 
 
 def validate_params(cls, mtd_name, *args, **kwargs):
@@ -74,41 +79,45 @@ def validate_params(cls, mtd_name, *args, **kwargs):
     """
     mtd = getattr(cls, mtd_name)
 
-    if (PY3 and not (inspect.isfunction(mtd) or inspect.ismethod(mtd)) and hasattr(cls, mtd_name)) or \
-            PY2 and not inspect.ismethod(mtd) and not isinstance(cls.__dict__[mtd_name], staticmethod):
+    py3_mtd_condition = (not (inspect.isfunction(mtd) or inspect.ismethod(mtd))
+                         and hasattr(cls, mtd_name))
+    py2_mtd_condition = (not inspect.ismethod(mtd)
+                         and not isinstance(cls.__dict__[mtd_name], staticmethod))
+    if (PY3 and py3_mtd_condition) or (PY2 and py2_mtd_condition):
         raise TypeError('Attribute `%s` of class `%s` must be a method. Got type `%s` instead.'
                         % (mtd_name, cls.__name__, type(mtd)))
 
-    required_params, optional_params = arg_spec(cls, mtd_name)
-    n_params = len(required_params) + len(optional_params)
-    n_req_params = len(required_params)
+    req_params, opt_params = arg_spec(cls, mtd_name)
+    n_params = len(req_params) + len(opt_params)
     n_args_kwargs = len(args) + len(kwargs)
 
-    for k in kwargs.keys():
-        if k not in required_params and k not in optional_params:
-            raise TaskInitializationError('kwarg `%s` is not a parameter of callable `%s`.' % (k, mtd.__name__))
+    for k in kwargs:
+        if k not in req_params and k not in opt_params:
+            raise TaskInitializationError('kwarg `%s` is not a parameter of callable `%s`.'
+                                          % (k, mtd.__name__))
 
-    if n_args_kwargs < n_req_params:
-        raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. Required args: %s'
-                                      % (mtd.__name__, ' '.join(required_params)))
+    if n_args_kwargs < len(req_params):
+        raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. '
+                                      'Required args: %s' % (mtd.__name__, str(req_params)))
     if len(args) > n_params or n_args_kwargs > n_params or len(kwargs) > n_params:
-        raise TaskInitializationError('Too many args/kwargs supplied for callable `%s`. Required args: %s'
-                                      % (mtd.__name__, ' '.join(required_params)))
+        raise TaskInitializationError('Too many args/kwargs supplied for callable `%s`. '
+                                      'Required args: %s' % (mtd.__name__, str(req_params)))
 
-    redundant_p = [p for p in kwargs.keys() if p not in required_params[len(args):] + optional_params]
-    if len(redundant_p) > 0:
-        raise TaskInitializationError('Supplied one or more kwargs that in the signature of callable `%s`. Redundant '
-                                      'kwargs: %s' % (mtd.__name__, ' '.join(redundant_p)))
+    redundant_p = [p for p in kwargs if p not in req_params[len(args):] + opt_params]
+    if redundant_p:
+        raise TaskInitializationError('Supplied one or more kwargs that in the signature of '
+                                      'callable `%s`. Redundant kwargs: %s'
+                                      % (mtd.__name__, str(redundant_p)))
 
-    needed_kwargs = required_params[len(args):]
-    if not all([True if p in kwargs.keys() else False for p in needed_kwargs]):
-        raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. Required args: %s'
-                                       % (mtd.__name__, ' '.join(required_params)))
+    needed_kwargs = req_params[len(args):]
+    if not all([True if p in kwargs else False for p in needed_kwargs]):
+        raise TaskInitializationError('Not enough args/kwargs supplied for callable `%s`. '
+                                      'Required args: %s' % (mtd.__name__, str(req_params)))
 
 
 def arg_spec(cls, mtd_name):
     """
-    Inspects the argument signature of a method (compatible with both PY2/3)
+    Cross-version argument inspection
 
     Parameters
     ----------
@@ -126,24 +135,25 @@ def arg_spec(cls, mtd_name):
     optional_params = []
 
     if hasattr(inspect, 'signature'):  # Python 3
-        params = inspect.signature(mtd).parameters
+        params = inspect.signature(mtd).parameters  # pylint: disable=no-member
 
         for k in params.keys():
-            if params[k].default == inspect.Parameter.empty:
-                # Python 3 does not make a difference between unbound methods and functions, so the only way to check if
-                # the first argument is of a regular method, or class method, is to look for the common name. Yikes.
+            if params[k].default == inspect.Parameter.empty:  # pylint: disable=no-member
+                # Python 3 does not make a difference between unbound methods and functions, so the
+                # only way to distinguish if the first argument is of a regular method, or a class
+                # method, is to look for the conventional argument name. Yikes.
                 if not (params[k].name == 'self' or params[k].name == 'cls'):
                     required_params.append(k)
             else:
                 optional_params.append(k)
     else:  # Python 2
-        params = inspect.getargspec(mtd)
-        n = len(params[0]) if params[0] else 0
+        params = inspect.getargspec(mtd)  # pylint: disable=deprecated-method
+        num = len(params[0]) if params[0] else 0
         n_opt = len(params[3]) if params[3] else 0
-        n_req = (n - n_opt) if n_opt <= n else 0
+        n_req = (num - n_opt) if n_opt <= num else 0
         for i in range(0, n_req):
             required_params.append(params[0][i])
-        for i in range(n_req, n):
+        for i in range(n_req, num):
             optional_params.append(params[0][i])
 
         if inspect.isroutine(getattr(cls, mtd_name)):

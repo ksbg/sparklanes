@@ -1,11 +1,11 @@
 import os
 from setuptools import setup
 
-with open('requirements.txt', 'r') as req:
-    requirements = req.read().splitlines()
+with open('requirements.txt', 'r') as req_file:
+    requirements = req_file.read().splitlines()
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')) as f:
-    long_description = f.read()
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')) as readme_file:
+    long_description = readme_file.read()
 
 setup(
     name='sparklanes',
@@ -33,5 +33,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords=['spark', 'pyspark', 'data', 'processing', 'preprocessing', 'pipelines']
+    keywords=['spark', 'pyspark', 'data', 'processing', 'preprocessing', 'pipelines'],
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
 )

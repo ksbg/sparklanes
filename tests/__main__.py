@@ -8,6 +8,6 @@ suite = TestSuite()
 suite.addTest(makeSuite(TestLane))
 suite.addTest(makeSuite(TestSparkSubmit))
 suite.addTest(makeSuite(TestSpark))
-
 runner = TextTestRunner(verbosity=2)
 runner.run(suite)
+

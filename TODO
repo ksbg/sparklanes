@@ -1,9 +1,8 @@
 - Better user-configurable logging
-- CI
-- Test sparkcontext/session changes and parallel processing
 - README
 - Example notebook
 - Docs
-- Allow arguments for both class initialization, as well as method execution
+- Test parallel task execution
+- Allow arguments for both class initialization, as well as for the entry method
 - Allow users to overwrite sparklane internal methods
 - Allow users to add extra sparklane config options (e.g. verbosity, unpersisting of already executed tasks, etc.)

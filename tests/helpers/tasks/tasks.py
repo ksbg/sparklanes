@@ -1,4 +1,4 @@
-from sparklanes import Task
+from sparklanes import Task, conn
 
 
 @Task('mtd')
@@ -140,3 +140,15 @@ class UndecoratedTask(object):
 class ExceptionThrowingTask(object):
     def mtd(self):
         raise Exception
+
+
+@Task('mtd')
+class ChangeContext(object):
+    def mtd(self):
+        conn.set_sc()
+
+
+@Task('mtd')
+class UseContext(object):
+    def mtd(self):
+        conn.sc.range(3)
