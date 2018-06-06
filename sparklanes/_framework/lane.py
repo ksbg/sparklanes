@@ -25,8 +25,10 @@ class Lane(object):
         """
         Parameters
         ----------
-        name (str): Custom name of the lane
-        run_parallel (bool): Indicates, whether the tasks in a Lane shall be executed in parallel.
+        name : str
+            Custom name of the lane
+        run_parallel : bool
+            Indicates, whether the tasks in a Lane shall be executed in parallel.
             Does not affect branches inside the lane (`run_parallel` must be indicated in the
             branches themselves)
         """
@@ -64,16 +66,16 @@ class Lane(object):
         return task_str
 
     def __validate_task(self, cls, entry_mtd_name, args, kwargs):
-        """
-        Checks if a class is a task, i.e. if it has been decorated with `sparklanes.Task`, and if
+        """Checks if a class is a task, i.e. if it has been decorated with `sparklanes.Task`, and if
         the supplied args/kwargs match the signature of the task's entry method.
 
         Parameters
         ----------
-        cls (LaneTask)
-        entry_mtd_name (str): Name of the method, which is called when the task is run
-        args (List)
-        kwargs (Dict)
+        cls : LaneTask
+        entry_mtd_name : str
+            Name of the method, which is called when the task is run
+        args : list
+        kwargs : dict
         """
         if not isclass(cls) or not issubclass(cls, LaneTask):
             raise TypeError('Tried to add non-Task `%s` to a Lane. Are you sure the task was '
@@ -82,14 +84,15 @@ class Lane(object):
         validate_params(cls, entry_mtd_name, *args, **kwargs)
 
     def add(self, cls_or_branch, *args, **kwargs):
-        """
-        Adds a task or branch to the lane.
+        """Adds a task or branch to the lane.
 
         Parameters
         ----------
-        cls_or_branch (LaneTask|Branch)
-        args (List[object])
-        kwargs (Dict{str: object})
+        cls_or_branch : Class
+        *args
+            Variable length argument list to be passed to `cls_or_branch` during instantiation
+        **kwargs
+            Variable length keyword arguments to be passed to `cls_or_branch` during instantiation
 
         Returns
         -------
@@ -160,16 +163,17 @@ class Branch(Lane, object):
 
 
 def build_lane_from_yaml(path):
-    """
-    Builds a `sparklanes.Lane` object from a YAML definition file.
+    """Builds a `sparklanes.Lane` object from a YAML definition file.
 
     Parameters
     ----------
-    path (str): Path to the YAML definition file
+    path: str
+        Path to the YAML definition file
 
     Returns
     -------
-    sparklanes.Lane: Lane, built according to instructions in YAML file
+    Lane
+        Lane, built according to instructions in YAML file
     """
     # Open
     with open(path, 'rb') as yaml_definition:

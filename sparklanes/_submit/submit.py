@@ -11,11 +11,6 @@ from subprocess import call, STDOUT
 SPARK_SUBMIT_FLAGS = ['verbose', 'supervised']
 
 
-def spark_submit():
-    """Console-script entry point"""
-    _package_and_submit(sys.argv[1:])
-
-
 def _package_and_submit(args):
     """
     Packages and submits a job, which is defined in a YAML file, to Spark.
@@ -285,3 +280,7 @@ def __run_spark_submit(lane_yaml, dist_dir, spark_args, silent):
 def __clean_up(dist_dir):
     """Delete packaged app"""
     shutil.rmtree(dist_dir)
+
+
+if __name__ == '__main__':
+    _package_and_submit(sys.argv[1:])

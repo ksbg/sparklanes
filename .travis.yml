@@ -5,12 +5,11 @@ python:
   - "3.5"
   - "3.6"
 install:
-  - pip install -r requirements-test.txt
+  - pip install -r requirements-dev.txt
   - pip install .
   - pip install coveralls
 env:
-  - VERBOSE_TESTING=0
-  - INIT_SPARK_ON_IMPORT=1
+  - VERBOSE_TESTING=0 INIT_SPARK_ON_IMPORT=1
 script:
   - coverage run -p -m tests
 after_success:

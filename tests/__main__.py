@@ -10,4 +10,3 @@ suite.addTest(makeSuite(TestSparkSubmit))
 suite.addTest(makeSuite(TestSpark))
 runner = TextTestRunner(verbosity=2)
 runner.run(suite)
-

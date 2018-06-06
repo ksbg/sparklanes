@@ -9,7 +9,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md'))
 
 setup(
     name='sparklanes',
-    version='0.2',
+    version='0.2.0',
     url='https://github.com/ksbg/sparklanes',
     download_url='https://github.com/ksbg/sparklanes/archive/0.2.zip',
     author='Kevin Baumgarten',
@@ -21,7 +21,7 @@ setup(
     packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
     install_requires=requirements,
     package_data={'sparklanes._submit': ['requirements-submit.txt']},
-    entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit:spark_submit']},
+    entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit']},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

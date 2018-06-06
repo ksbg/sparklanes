@@ -24,8 +24,10 @@ class SparkContextAndSessionContainer(object):
     def set_sc(cls, master=None, appName=None, sparkHome=None, pyFiles=None, environment=None,
                batchSize=0, serializer=PickleSerializer(), conf=None, gateway=None, jsc=None,
                profiler_cls=BasicProfiler):
-        """Creates and initializes a new `SparkContext`. Argument signature is taken from
-        `pyspark.SparkContext`. Refer to the Spark documentation"""
+        """Creates and initializes a new `SparkContext` (the old one will be stopped).
+        Argument signature is copied from `pyspark.SparkContext
+        <https://spark.apache.org/docs/latest/api/python/pyspark.html#pyspark.SparkContext>`_.
+        """
         if cls.sc is not None:
             cls.sc.stop()
         cls.sc = SparkContext(master, appName, sparkHome, pyFiles, environment, batchSize,
@@ -35,8 +37,10 @@ class SparkContextAndSessionContainer(object):
 
     @classmethod
     def set_spark(cls, master=None, appName=None, conf=None, hive_support=False):
-        """Creates and initializes a new `SparkSession`. Signature is taken from
-        `pyspark.sql.SparkSession`. Refer to the Spark documentation."""
+        """Creates and initializes a new `SparkSession`. Argument signature is copied from
+        `pyspark.sql.SparkSession
+        <https://spark.apache.org/docs/latest/api/python/pyspark.sql.html#pyspark.sql.SparkSession>`_.
+        """
         sess = SparkSession.builder
         if master:
             sess.master(master)

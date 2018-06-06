@@ -119,17 +119,19 @@ class LaneTask(object):
         return res
 
     def cache(self, name, val, overwrite=True):
-        """
-        Assigns an attribute reference to all subsequent tasks. For example, if a task caches a
+        """Assigns an attribute reference to all subsequent tasks. For example, if a task caches a
         DataFrame `df` using `self.cache('some_df', df)`, all tasks that follow can access the
         DataFrame using `self.some_df`. Note that manually assigned attributes that share the same
         name have precedence over cached attributes.
 
         Parameters
         ----------
-        name (str): Name of the attribute
-        val (object): Attribute value
-        overwrite (bool): Indicates if the attribute shall be overwritten, or not (if `False`, and
+        name : str
+            Name of the attribute
+        val
+            Attribute value
+        overwrite : bool
+            Indicates if the attribute shall be overwritten, or not (if `False`, and
             a cached attribute with the given name already exists, `sparklanes.errors.CacheError`
             will be thrown).
         """
@@ -138,13 +140,13 @@ class LaneTask(object):
         TaskCache.cached[name] = val
 
     def uncache(self, name):
-        """
-        Removes an attribute from the cache, i.e. it will be deleted and becomes unavailable for
+        """Removes an attribute from the cache, i.e. it will be deleted and becomes unavailable for
         all subsequent tasks.
 
         Parameters
         ----------
-        name (str): Name of the cached attribute, which shall be deleted
+        name : str
+            Name of the cached attribute, which shall be deleted
         """
         try:
             del TaskCache.cached[name]
@@ -203,12 +205,12 @@ class TaskCache(object):
 
     @staticmethod
     def get(name):
-        """
-        Retrieves an object from the cache.
+        """Retrieves an object from the cache.
 
         Parameters
         ----------
-        name (str): Name of the object to be retrieved
+        name : str
+            Name of the object to be retrieved
 
         Returns
         -------

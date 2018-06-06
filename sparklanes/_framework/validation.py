@@ -8,32 +8,20 @@ from .errors import TaskInitializationError, SchemaError
 
 
 def validate_schema(yaml_def, branch=False):
-    """
-    Validates if a dictionary matches the following schema.
-
-    lane:
-      name: str {Custom name of the lane/branch} (optional)
-      run_parallel: bool {Indicates whether the tasks in lane/branch should be executed in parallel)
-      tasks: list {list of tasks or branches} (required)
-        - class: str {name of the class, with full path under which it is accessible,
-                 e.g. pkg.module.cls} (required)
-          args: List[object] {list of arguments} (optional)
-          kwargs: Dict{str: object} {dict of keyword arguments} (optional)
-        - branch: {same definition as `lane`. Can be nested infinitely with more branches in the
-                   branch's `tasks`}
-            name: ...
-            ...
-        ...
+    """Validates the schema of a dict
 
     Parameters
     ----------
-    yaml_def (dict): Dict whose schema shall be validated
-    branch (bool): Indicates whether `yaml_def` is a dict of a top-level lane, or of a branch
+    yaml_def : dict
+        dict whose schema shall be validated
+    branch : bool
+        Indicates whether `yaml_def` is a dict of a top-level lane, or of a branch
         inside a lane (needed for recursion)
 
     Returns
     -------
-    bool: True if validation was successful
+    bool
+        True if validation was successful
     """
     schema = Schema({
         'lane' if not branch else 'branch': {
@@ -65,17 +53,19 @@ def validate_schema(yaml_def, branch=False):
 
 
 def validate_params(cls, mtd_name, *args, **kwargs):
-    """
-    Validates if the given args/kwargs match the method signature. Checks if:
+    """Validates if the given args/kwargs match the method signature. Checks if:
     - at least all required args/kwargs are given
     - no redundant args/kwargs are given
 
     Parameters
     ----------
-    cls (class)
-    mtd_name (str): Name of the method whose parameters shall be validated
-    args (List): Positional arguments
-    kwargs (dict): Dict of keyword arguments
+    cls : Class
+    mtd_name : str
+        Name of the method whose parameters shall be validated
+    args: list
+        Positional arguments
+    kwargs : dict
+        Dict of keyword arguments
     """
     mtd = getattr(cls, mtd_name)
 
@@ -116,18 +106,20 @@ def validate_params(cls, mtd_name, *args, **kwargs):
 
 
 def arg_spec(cls, mtd_name):
-    """
-    Cross-version argument inspection
+    """Cross-version argument signature inspection
 
     Parameters
     ----------
-    cls (class)
-    mtd_name (str): Name of the method to be inspected
+    cls : class
+    mtd_name : str
+        Name of the method to be inspected
 
     Returns
     -------
-    required_params (List[str]): List of required, positional parameters
-    optional_params (List[str]): List of optional parameters, i.e. parameters with a default value
+    required_params : list of str
+        List of required, positional parameters
+    optional_params : list of str
+        List of optional parameters, i.e. parameters with a default value
     """
     mtd = getattr(cls, mtd_name)
 

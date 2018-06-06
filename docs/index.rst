@@ -1,7 +1,5 @@
-sparklanes
-==========
-
-[![PyPI version](https://badge.fury.io/py/sparklanes.svg)](https://badge.fury.io/py/sparklanes) [![Build Status](https://travis-ci.org/ksbg/pyspark-etl.svg?branch=example)](https://travis-ci.org/ksbg/pyspark-etl?branch=example) [![Coverage Status](https://coveralls.io/repos/github/ksbg/pyspark-etl/badge.svg?branch=example)](https://coveralls.io/github/ksbg/pyspark-etl?branch=example) ![pylint Score](https://mperlet.github.io/pybadge/badges/9.92.svg) [![Doc status](https://sparklanes.readthedocs.io/en/latest/?badge=latest)](https://sparklanes.readthedocs.io)
+Welcome to sparklanes's documentation!
+======================================
 
 sparklanes is a lightweight data processing framework for Apache Spark.
 It was built with the intention to make building complex spark processing
@@ -19,3 +17,20 @@ to then be packaged and submitted to spark using a single command.
 Alternatively, the same can be achieved manually by using the framework's
 API.
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   tasks
+   lanes
+   submitting
+   api/index
+   iris_example.ipynb
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
