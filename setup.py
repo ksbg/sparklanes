@@ -1,17 +1,16 @@
 import os
 from setuptools import setup
 
-with open('requirements.txt', 'r') as req_file:
-    requirements = req_file.read().splitlines()
-
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')) as readme_file:
     long_description = readme_file.read()
 
 setup(
     name='sparklanes',
-    version='0.2.0',
+    version='0.2.1',
     url='https://github.com/ksbg/sparklanes',
-    download_url='https://github.com/ksbg/sparklanes/archive/0.2.zip',
+    project_urls={
+        'sparklanes documentation': 'https://sparklanes.readthedocs.io/',
+    },
     author='Kevin Baumgarten',
     author_email='kevin@ksbg.io',
     description='A lightweight framework to build and execute data processing pipelines in pyspark '
@@ -19,7 +18,13 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
-    install_requires=requirements,
+    install_requires=[
+        'py4j==0.10.6',
+        'pyspark==2.3.0',
+        'PyYAML==3.12',
+        'schema==0.6.7',
+        'six==1.11.0',
+    ],
     package_data={'sparklanes._submit': ['requirements-submit.txt']},
     entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit:submit_to_spark']},
     classifiers=[
@@ -35,4 +40,5 @@ setup(
     ],
     keywords=['spark', 'pyspark', 'data', 'processing', 'preprocessing', 'pipelines'],
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
+
 )

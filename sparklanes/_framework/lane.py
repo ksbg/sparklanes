@@ -61,7 +61,7 @@ class Lane(object):
 
             return out
 
-        task_str += generate_str(str(self) + '=' * 80)
+        task_str += generate_str(self) + '=' * 80
 
         return task_str
 
@@ -115,7 +115,7 @@ class Lane(object):
         """
         logger = make_default_logger(INTERNAL_LOGGER_NAME)
         logger.info('\n%s\nExecuting `%s`\n%s\n', '-'*80, self.name, '-'*80)
-        logger.info('\n' + str(self))
+        logger.info('\n%s', str(self))
 
         threads = []
 

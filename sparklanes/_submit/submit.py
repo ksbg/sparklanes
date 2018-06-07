@@ -12,6 +12,7 @@ SPARK_SUBMIT_FLAGS = ['verbose', 'supervised']
 
 
 def submit_to_spark():
+    """Console-script entry point"""
     _package_and_submit(sys.argv[1:])
 
 
@@ -284,5 +285,3 @@ def __run_spark_submit(lane_yaml, dist_dir, spark_args, silent):
 def __clean_up(dist_dir):
     """Delete packaged app"""
     shutil.rmtree(dist_dir)
-
-
