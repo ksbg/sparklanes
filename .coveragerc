@@ -1,0 +1,13 @@
+[run]
+source =
+    sparklanes
+omit =
+    tests/helpers/yml
+    tests/helpers/data
+    sparklanes/_submit/_main.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == __main__:

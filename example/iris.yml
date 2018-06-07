@@ -1,0 +1,12 @@
+lane:
+  name: IrisExampleLane
+  run_parallel: false
+  tasks:
+    - class: tasks.iris.ExtractIrisCSVData
+      kwargs:
+        iris_csv_path: data/iris.csv
+    - class: tasks.iris.AddRowIndex
+    - class: tasks.iris.NormalizeColumns
+    - class: tasks.iris.SaveAsJSON
+      args:
+        - out
