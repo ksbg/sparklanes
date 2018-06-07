@@ -51,20 +51,20 @@ def _parse_and_validate_args(args):
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
     parser.add_argument('-y', '--yaml', type=str, required=True,
                         help='Path to the yaml definition file.')
-    parser.add_argument('-m', '--main', type=str, required=False,
-                        help='Path to a custom main python file')
     parser.add_argument('-p', '--package', type=str, required=True,
                         help='Path to the python package containing your tasks.')
+    parser.add_argument('-r', '--requirements', type=str, required=False,
+                        help='Path to a `requirements.txt` specifying any additional dependencies '
+                             'of your tasks.')
     parser.add_argument('-e', '--extra-data', nargs='*', required=False,
                         help='Path to any additional files or directories that should be packaged '
                              'and sent to Spark.')
+    parser.add_argument('-m', '--main', type=str, required=False,
+                        help='Path to a custom main python file')
     parser.add_argument('-s', '--spark-args', nargs='*', required=False,
                         help='Any additional arguments that should be sent to Spark via '
                              'spark-submit. '
                              '(e.g. `--spark-args executor-memory=20G total-executor-cores=100`)')
-    parser.add_argument('-r', '--requirements', type=str, required=False,
-                        help='Path to a `requirements.txt` specifying any additional dependencies '
-                             'of your tasks.')
     parser.add_argument('--silent', help='If set, no output will be sent to console',
                         action='store_true')
     args = parser.parse_args(args).__dict__
