@@ -39,10 +39,10 @@ directory structure:
       ...
 
 The exact path to be used then depends on which folder will be packaged and submitted to spark. To
-reference `SomeExtractorClass`, the correct class path would be
-`tasks.extract.extractors.SomeExtractorClass` if the entire `tasks` folder would be packaged and
-submitted to Spark, whereas just packaging the `extract` folder would result in the correct class
-path `extract.extractors.SomeExtractorClass` (see :doc:`submitting`).
+reference :code:`SomeExtractorClass`, the correct class path would be
+:code:`tasks.extract.extractors.SomeExtractorClass` if the entire :code:`tasks` folder would be packaged and
+submitted to Spark, whereas just packaging the :code:`extract` folder would result in the correct class
+path :code:`extract.extractors.SomeExtractorClass` (see :doc:`submitting`).
 
 
 Using the API
@@ -54,23 +54,23 @@ Lanes can also be defined and executed using sparklane's API, for example:
 
     from sparklanes import Lane, Task
 
-        @Task('main_mtd')
-        class Task1(object):
-            def main_mtd(self, a, b, c):
-                pass
+    @Task('main_mtd')
+    class Task1(object):
+        def main_mtd(self, a, b, c):
+            pass
 
-        @Task('main_mtd')
-        class Task2(object):
-            def main_mtd(self, a, b):
-                pass
+    @Task('main_mtd')
+    class Task2(object):
+        def main_mtd(self, a, b):
+            pass
 
-        # Building the lane
-        lane = (Lane(name='ExampleLane', run_parallel=False)
-                .add(Task1, 1, 2, c=3)
-                .add(Task2, a=1, b=2))
+    # Building the lane
+    lane = (Lane(name='ExampleLane', run_parallel=False)
+            .add(Task1, 1, 2, c=3)
+            .add(Task2, a=1, b=2))
 
-        # Execute it
-        lane.run()
+    # Execute it
+    lane.run()
 
 Refer to the API documentation for :class:`sparklanes.Lane`.
 
@@ -82,11 +82,12 @@ executed in parallel. As stated in the
 `Spark documentation
 <http://spark.apache.org/docs/latest/job-scheduling.html#scheduling-within-an-application>`_:
 
+.. code-block:: bash
 
     Inside a given Spark application (SparkContext instance), multiple parallel jobs can run
     simultaneously if they were submitted from separate threads.
 
-If parameter `run_parallel` is true when instantiating a `Lane` or `Branch`, a separate thread will
+If parameter :code:`run_parallel` is true when instantiating a :code:`Lane` or :code:`Branch`, a separate thread will
 be spawned for each of the tasks it contains, ensuring that Spark will execute them in
 parallel.
 
@@ -131,8 +132,7 @@ Or the same lane defined as YAML:
               - class: pkg.mdl.SubTaskB2
             - class: pkg.mdl.SubTaskC
 
-In this lane, `SubTaskA`, Branch `SubBranch` and `SubTaskC` would be executed in parallel, whereas
-the tasks within `SubBranch` would be executed subsequently. This way, complex processing
-pipelines can be built.
+In this lane, :code:`SubTaskA`, Branch :code:`SubBranch` and :code:`SubTaskC` would be executed in parallel, whereas
+the tasks within :code:`SubBranch` wouldn't be. This way, complex processing pipelines can be built.
 
 Refer to :class:`sparklanes.Branch`.

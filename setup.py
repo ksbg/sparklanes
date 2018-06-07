@@ -21,7 +21,7 @@ setup(
     packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
     install_requires=requirements,
     package_data={'sparklanes._submit': ['requirements-submit.txt']},
-    entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit']},
+    entry_points={'console_scripts': ['lane-submit=sparklanes._submit.submit:submit_to_spark']},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

@@ -2,10 +2,11 @@ lane:
   name: IrisExampleLane
   run_parallel: false
   tasks:
-    - class: tasks.ExtractIrisCSVData
+    - class: tasks.iris.ExtractIrisCSVData
       kwargs:
         iris_csv_path: data/iris.csv
-    - class: tasks.AddRowIndex
-    - class: tasks.NormalizeColumns
-    - class: tasks.SaveAsJSON
-      args: [data]
+    - class: tasks.iris.AddRowIndex
+    - class: tasks.iris.NormalizeColumns
+    - class: tasks.iris.SaveAsJSON
+      args:
+        - out

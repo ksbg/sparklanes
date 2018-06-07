@@ -11,6 +11,10 @@ from subprocess import call, STDOUT
 SPARK_SUBMIT_FLAGS = ['verbose', 'supervised']
 
 
+def submit_to_spark():
+    _package_and_submit(sys.argv[1:])
+
+
 def _package_and_submit(args):
     """
     Packages and submits a job, which is defined in a YAML file, to Spark.
@@ -128,11 +132,11 @@ def __validate_and_fix_spark_args(spark_args):
                 raise SystemExit('Spark argument `%s` does not seem to be in the correct format '
                                  '`ARG_NAME=ARG_VAL`, and is also not recognized to be one of the'
                                  'valid spark-submit flags (%s).' % (arg, str(SPARK_SUBMIT_FLAGS)))
-            arg_splits = arg.split('=')
-            arg_splits[0] = '--' + arg_splits[0]
-            fixed_args += arg_splits
+            eq_pos = arg.find('=')
+            fixed_args.append('--' + arg[:eq_pos])
+            fixed_args.append(arg[eq_pos + 1:])
         else:
-            fixed_args += ('--' + arg)
+            fixed_args.append('--' + arg)
 
     return fixed_args
 
@@ -282,5 +286,3 @@ def __clean_up(dist_dir):
     shutil.rmtree(dist_dir)
 
 
-if __name__ == '__main__':
-    _package_and_submit(sys.argv[1:])

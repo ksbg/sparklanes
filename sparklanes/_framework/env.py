@@ -1,12 +1,23 @@
-"""Environment configuration variables that can be passed when executing a lane"""
+"""Environment configuration variables that can be passed when executing a lane."""
 import os
 
-INTERNAL_LOGGER_NAME = 'SPARKLANES'  # Name of the logger to be used for internal logging
+INTERNAL_LOGGER_NAME = 'SPARKLANES'
+"""The logger's name under which internal events will be logged."""
+
 SPARK_APP_NAME = 'sparklanes.app'
-UNNAMED_LANE_NAME = 'UnnamedLane'  # Default name if a lane isn't given a name
-UNNAMED_BRANCH_NAME = 'UnnamedBranch'  # Default name if a branch isn't given a name
-VERBOSE_TESTING = False  # Do not show console output during test if False
-INIT_SPARK_ON_IMPORT = True  # Initiate a spark sc & spark on import
+"""The app name using which the default SparkContext/SparkSession will be instantiated"""
+
+UNNAMED_LANE_NAME = 'UnnamedLane'
+"""Default name of a lane, if no custom name is specified."""
+
+UNNAMED_BRANCH_NAME = 'UnnamedBranch'
+"""Default name of a branch, if no custom branch is specified"""
+
+VERBOSE_TESTING = False
+"""Specifies if output should be printed to console when running tests"""
+
+INIT_SPARK_ON_IMPORT = True
+"""Specifies if a default SparkContext/SparkSession should be instantiated upon import sparklanes"""
 
 for v in locals().copy():
     if not v.startswith('__') and os.getenv(v):

@@ -4,8 +4,8 @@ lane:
   tasks:
     - class: tasks.iris_tasks.ExtractIrisCSVData
       kwargs:
-        iris_csv_path: %s # Input file location to be inserted during test
+        iris_csv_path: %s # Input file location to be inserted while running the test
     - class: tasks.iris_tasks.AddRowIndex
     - class: tasks.iris_tasks.NormalizeColumns
     - class: tasks.iris_tasks.SaveAsJSON
-      args: %s # Output file location to be inserted during test
+      args: %s # Output file location to be inserted while running the test

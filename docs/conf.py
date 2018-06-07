@@ -1,60 +1,31 @@
-# -*- coding: utf-8 -*-
-#
-# Configuration file for the Sphinx documentation builder.
-#
-# This file does only contain a selection of the most common options. For a
-# full list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
 import os
 import sys
+
+
 sys.path.insert(0, os.path.abspath('..'))
 
+# Disable loading spark on import
 os.environ['INIT_SPARK_ON_IMPORT'] = '0'
 
-# -- Project information -----------------------------------------------------
-
+# Project info
 project = u'sparklanes'
 copyright = u'2018, Kevin Baumgarten'
-author = u'Kevin Baumgarten'
+author = u'https://github.com/ksbg'
+version = u'0.2.0'
 
-# The short X.Y version
-version = u''
-# The full version, including alpha/beta/rc tags
-release = u'0.2.0'
-
-
-# -- General configuration ---------------------------------------------------
-
-# If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
+# Extensions
 extensions = [
     'sphinx.ext.autodoc',
     # 'sphinx.ext.doctest',
     'sphinx.ext.todo',
-    'sphinx.ext.coverage',
+    # 'sphinx.ext.coverage',
     # 'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
+    # 'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
     'nbsphinx',
     'sphinxcontrib.programoutput'
 ]
-
-# External docs
-intersphinx_mapping = {'spark': ('https://spark.apache.org/docs/latest/api/python/', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

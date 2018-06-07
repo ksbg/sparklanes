@@ -2,7 +2,8 @@
 API reference
 =============
 
-
+sparklanes
+==========
 
 .. automodule:: sparklanes
     :members:
