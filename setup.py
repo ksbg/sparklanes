@@ -1,9 +1,6 @@
 import os
 from setuptools import setup
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')) as readme_file:
-    long_description = readme_file.read()
-
 setup(
     name='sparklanes',
     version='0.2.1',
@@ -15,7 +12,21 @@ setup(
     author_email='kevin@ksbg.io',
     description='A lightweight framework to build and execute data processing pipelines in pyspark '
                 '(Apache Spark\'s python API)',
-    long_description=long_description,
+    long_description='sparklanes is a lightweight data processing framework for Apache Spark'
+                     'written in Python. It was built with the intention to make building'
+                     'complex spark processing pipelines simpler, by shifting the focus'
+                     'towards writing data processing code without having to spent much time'
+                     'on the surrounding application architecture.'
+                     '\n'
+                     'Data processing pipelines, or *lanes*, are built by stringing together'
+                     'encapsulated processor classes, which allows creation of lane definitions'
+                     'with an arbitrary processor order, where processors can be easily'
+                     'removed, added or swapped.'
+                     '\n'
+                     'Processing pipelines can be defined using *lane configuration YAML files*,'
+                     'to then be packaged and submitted to spark using a single command.'
+                     'Alternatively, the same can be achieved manually by using the framework'
+                     'API.',
     long_description_content_type='text/markdown',
     packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
     install_requires=[
