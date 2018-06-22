@@ -56,6 +56,12 @@ def _parse_and_validate_args(args):
     ----------
     args (List): Command-line arguments
     """
+    class ExtendAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if getattr(namespace, self.dest, None) is None:
+                setattr(namespace, self.dest, [])
+            getattr(namespace, self.dest).extend(values)
+
     parser = argparse.ArgumentParser(description='Submitting a lane to spark.')
     parser.add_argument('-y', '--yaml', type=str, required=True,
                         help='Path to the yaml definition file.')
@@ -64,7 +70,7 @@ def _parse_and_validate_args(args):
     parser.add_argument('-r', '--requirements', type=str, required=False,
                         help='Path to a `requirements.txt` specifying any additional dependencies '
                              'of your tasks.')
-    parser.add_argument('-e', '--extra-data', nargs='*', required=False,
+    parser.add_argument('-e', '--extra-data', nargs='*', required=False, action=ExtendAction,
                         help='Path to any additional files or directories that should be packaged '
                              'and sent to Spark.')
     parser.add_argument('-m', '--main', type=str, required=False,
