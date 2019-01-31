@@ -9,9 +9,9 @@ os.environ['INIT_SPARK_ON_IMPORT'] = '0'
 
 # Project info
 project = u'sparklanes'
-copyright = u'2018, Kevin Baumgarten'
+copyright = u'2019, Kevin Baumgarten'
 author = u'https://github.com/ksbg'
-version = u'0.2.0'
+version = u'0.2.4'
 
 # Extensions
 extensions = [

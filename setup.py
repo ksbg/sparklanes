@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='sparklanes',
-    version='0.2.3',
+    version='0.2.4',
     url='https://github.com/ksbg/sparklanes',
     project_urls={
         'sparklanes documentation': 'https://sparklanes.readthedocs.io/',
@@ -31,7 +31,7 @@ setup(
     install_requires=[
         'py4j==0.10.6',
         'pyspark==2.3.0',
-        'PyYAML==3.12',
+        'PyYAML==4.2b1',
         'schema==0.6.7',
         'six==1.11.0',
     ],
