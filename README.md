@@ -53,3 +53,7 @@ Run the test suite from the project root using:
 Build the documentation:
 
     cd docs && make html
+
+Disclaimer
+----------
+I don't recommend using this in production, as I'm not actively maintaining it.
