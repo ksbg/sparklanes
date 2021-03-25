@@ -43,7 +43,7 @@ pyparsing==2.2.0
 pyspark==2.3.0
 python-dateutil==2.7.3
 pytz==2018.4
-PyYAML==4.2b1
+PyYAML==5.4
 pyzmq==17.0.0
 requests==2.21.0
 schema==0.6.7
