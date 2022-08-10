@@ -30,7 +30,7 @@ setup(
     packages=['sparklanes', 'sparklanes._submit', 'sparklanes._framework'],
     install_requires=[
         'py4j==0.10.6',
-        'pyspark==2.3.0',
+        'pyspark==3.1.3',
         'PyYAML==4.2b1',
         'schema==0.6.7',
         'six==1.11.0',
